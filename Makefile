@@ -147,6 +147,14 @@ export OFILES := $(OFILES_BIN) $(OFILES_SOURCES)
 
 export HFILES := $(addsuffix .h,$(subst .,_,$(BINFILES)))
 
+LUA_SRCS := $(wildcard $(DATA)/*.lua)
+LUA_HDRS := $(LUA_SRCS:.lua=_lua.h)
+
+TTF_SRCS := $(wildcard $(DATA)/*.ttf)
+TTF_HDRS := $(TTF_SRCS:.ttf=_ttf.h)
+
+export HFILES += $(LUA_HDRS) $(TTF_HDRS)
+
 #---------------------------------------------------------------------------------
 # build a list of include paths
 #---------------------------------------------------------------------------------
@@ -190,7 +198,7 @@ DEPENDS	:=	$(OFILES:.o=.d)
 $(OUTPUT).dol: $(OUTPUT).elf
 $(OUTPUT).elf: $(OFILES)
 
-# $(OFILES_SOURCES) : $(HFILES)
+$(OFILES_SOURCES) : $(HFILES)
 
 #---------------------------------------------------------------------------------
 # This rule links in binary data with the .jpg extension
@@ -221,6 +229,10 @@ $(OUTPUT).elf: $(OFILES)
 	$(bin2o)
 	@echo "$@ : $*.h" > $*.d
 
+%.lua.h: %.lua
+	@echo "LUA     $<"
+	@xxd -i $< > $@
+
 -include $(DEPENDS)
 
 #---------------------------------------------------------------------------------
@@ -231,6 +243,10 @@ $(OUTPUT).elf: $(OFILES)
 	@echo $(notdir $<)
 	$(bin2o)
 	@echo "$@ : $*.h" > $*.d
+
+%.ttf.h: %.ttf
+	@echo "TTF     $<"
+	@xxd -i $< > $@
 
 -include $(DEPENDS)
 
