@@ -1,5 +1,7 @@
 local love = require("love")
 
+print("Hello From Lua")
+
 require("love.arg")
 require("love.callbacks")
 

@@ -34,7 +34,7 @@ extern "C" {
 #include "boot_lua.h"
 #include "nogame_lua.h"
 #include "arg_lua.h"
-#include "jitsetup_lua.h"
+//#include "jitsetup_lua.h"
 
 #include <grrlib.h>
 
@@ -86,6 +86,7 @@ static int love_preload(lua_State *L, lua_CFunction f, const char *name) { // Fr
 int luaopen_love(lua_State *L) {
     sol::state_view luastate(L);
 
+    love::logError("=> Creating LUA table");
     lua_getglobal(L, "love");
     if (!lua_istable(L, -1)) {
         lua_pop(L, 1);
@@ -94,15 +95,19 @@ int luaopen_love(lua_State *L) {
         lua_setglobal(L, "love");
     }
 
-    for (int i = 0; modules[i].name != nullptr; i++)
+    love::logError("=> Loading modules : ");
+    for (int i = 0; modules[i].name != nullptr; i++){ 
+        love::logError(modules[i].name);
         love_preload(L, modules[i].func, modules[i].name);
+    }
 
-    lua_getglobal(L, "require");
-    lua_pushstring(L, "love.jitsetup");
-    lua_call(L, 1, 1);
+    //lua_getglobal(L, "require");
+    //lua_pushstring(L, "love.jitsetup");
+    //lua_call(L, 1, 1);
 
     static const char *MAIN_THREAD_KEY = "_love_mainthread";
-
+ 
+    love::logError("=> Loading main thread");
     lua_getfield(L, LUA_REGISTRYINDEX, MAIN_THREAD_KEY);
     if (lua_isnoneornil(L, -1)) {
         lua_pop(L, 1);
@@ -110,7 +115,8 @@ int luaopen_love(lua_State *L) {
         lua_pushthread(L);
         lua_pushvalue(L, -1);
         lua_setfield(L, LUA_REGISTRYINDEX, MAIN_THREAD_KEY);
-    }
+    } 
+    love::logError("=> Done");
 
     luastate["love"]["_version"] = LOVE_VERSION_STRING;
     luastate["love"]["_version_major"] = LOVE_VERSION_MAJOR;
@@ -128,6 +134,8 @@ int luaopen_love(lua_State *L) {
 }
 
 int luaopen_love_nogame(lua_State *L) {
+
+    love::logError("Loading : No game found");
     if (luaL_loadbuffer(L, (const char *)nogame_lua, nogame_lua_size, "=[love \"nogame.lua\"]") == 0)
         lua_call(L, 0, 1);
 
@@ -135,6 +143,8 @@ int luaopen_love_nogame(lua_State *L) {
 }
 
 int luaopen_love_arg(lua_State *L) {
+    
+    love::logError("Loading : Arg");
     if (luaL_loadbuffer(L, (const char *)arg_lua, arg_lua_size, "=[love \"arg.lua\"]") == 0)
         lua_call(L, 0, 1);
 
@@ -142,24 +152,25 @@ int luaopen_love_arg(lua_State *L) {
 }
 
 int luaopen_love_callbacks(lua_State *L) {
+    love::logError("Loading : Callbacks");
     if (luaL_loadbuffer(L, (const char *)callbacks_lua, callbacks_lua_size, "=[love \"callbacks.lua\"]") == 0)
         lua_call(L, 0, 1);
-
     return 1;
 }
 
 int luaopen_love_boot(lua_State *L) {
+    love::logError("Loading : Boot");
     if (luaL_loadbuffer(L, (const char *)boot_lua, boot_lua_size, "=[love \"boot.lua\"]") == 0)
         lua_call(L, 0, 1);
-
     return 1;
 }
 
 int luaopen_love_jitsetup(lua_State *L) {
-    if (luaL_loadbuffer(L, (const char *)jitsetup_lua, jitsetup_lua_size, "=[love \"jitsetup.lua\"]") == 0)
-        lua_call(L, 0, 1);
-
     return 1;
+    //if (luaL_loadbuffer(L, (const char *)jitsetup_lua, jitsetup_lua_size, "=[love \"jitsetup.lua\"]") == 0)
+    //    lua_call(L, 0, 1);
+
+    //return 1;
 }
 
 
@@ -168,10 +179,13 @@ namespace love {
     void UNUSED(...) {};
 
     void logError(const std::string &msg) {
-        std::ofstream log("sd:/LOVEPower_cpp_error.log", std::ios::app); // append mode
-        if (log.is_open()) {
-            log << msg << std::endl;
-        }
+        FILE* f = fopen("sd:/lovepower.log", "a");
+        fprintf(f, "[DEBUG] %s\n", msg.c_str());
+        fclose(f);
+        //std::ofstream log("sd:/LOVEPower_cpp_error.log", std::ios::app); // append mode
+        //if (log.is_open()) {
+        //    log << msg << std::endl;
+        //}
     }
 
     bool hasDeprecationOutput() {
@@ -209,40 +223,58 @@ namespace love {
                 sol::lib::jit
                 #endif
             );
-
+            luastate.set_function("print", logError);
             lua_State *L = luastate.lua_state();
-            love_preload(L, luaopen_love_jitsetup, "love.jitsetup");
-            lua_getglobal(L, "require");
-            lua_pushstring(L, "love.jitsetup");
-            lua_call(L, 1, 0);
+            
+            logError("LUA initializing");
+            
+            //love_preload(L, luaopen_love_jitsetup, "love.jitsetup");
+            //lua_getglobal(L, "require");
+            //lua_pushstring(L, "love.jitsetup");
+            //lua_call(L, 1, 0);
+            
+            logError("Luaopen love ?");
 
             love_preload(L, luaopen_love, "love");
             lua_getglobal(L, "require");
             lua_pushstring(L, "love");
             lua_call(L, 1, 1);
 
+            logError("Luaopen love : yes");
+            
             lua_pop(L, 1);
 
+            logError("Initialize every system : ?");
             love::event::__init(luastate);
+            logError("Event : yes");
             love::audio::__init(luastate);
+            logError("Audio : yes");
             love::graphics::__init(luastate);
+            logError("Graphics : yes");
             love::filesystem::__init(luastate, argc, argv);
+            logError("Filesystem : yes");
             love::timer::__init(luastate);
+            logError("Timer : yes");
             love::wiimote::__init(luastate);
+            logError("Wiimote : yes");
             #ifdef USE_LIBMII
                 love::mii::__init(luastate);
             #endif
 
+            logError("Creating args table");
             luastate["arg"] = luastate.create_table();
             for (int i = 0; i < argc; i++) {
                 luastate["arg"][i + 1] = argv[i];
             }
+            logError("Done");
 
             lua_pop(L, 1);
 
+            logError("Booting love");
             lua_getglobal(L, "require");
             lua_pushstring(L, "love.boot");
             lua_call(L, 1, 1);
+            logError("Done");
 
             //retval = 0;
             int done = 0;
@@ -255,10 +287,10 @@ namespace love {
             } */
             lua_close(L);
         
+            love::logError("End of init");
             return done;
         } catch (const std::exception &e) {
             logError(std::string("Exception during initialization: ") + e.what());
-
             return 0;
         }
     }
