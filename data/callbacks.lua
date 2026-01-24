@@ -18,6 +18,7 @@ function love.createhandlers()
 end
 
 function love.run()
+    print("Love.run : Beginnning")
     if love.load then love.load(love.arg.parseGameArguments(arg), arg) end
 
     if love.timer then love.timer.step() end
@@ -25,6 +26,7 @@ function love.run()
     local dt = 0
 
     while true do
+        print("Another frame")
         if love.event then
             love.event.pump()
             while true do
@@ -48,11 +50,17 @@ function love.run()
                 --love.graphics.clear(love.graphics.getBackgroundColor()) -- TODO: Figure out why this freezes the game
                 -- until then, render a rectangle
                 local lastColor = {love.graphics.getColor()}
+                print("Beginning drawing loop")
                 love.graphics.setColor(love.graphics.getBackgroundColor())
                 love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
                 love.graphics.setColor(unpack(lastColor))
-                if love.draw then love.draw() end
+                if love.draw then
+                    print("love.draw begin")
+                    love.draw()
+                    print("love.draw end")
+                end
                 love.graphics.present()
+                print("Ending drawing loop")
             end
 
             love.timer.sleep(0.001)
@@ -72,11 +80,12 @@ local function error_printer(msg, layer)
 end
 
 local function writeLog(msg)
-    local f = io.open("sd:/love_error_lua.log", "a")
-    if f then
-        f:write(msg, "\n")
-        f:close()
-    end
+    print("__LOVE_LOG__ : "..msg)
+    --local f = io.open("sd:/love_error_lua.log", "a")
+    --if f then
+    --    f:write(msg, "\n")
+    --    f:close()
+    --end
 end
 
 function love.errhand(err)

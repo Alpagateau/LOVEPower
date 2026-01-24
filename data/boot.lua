@@ -1,6 +1,6 @@
 local love = require("love")
 
-print("Hello From Lua")
+print("[LUA] Hello From Lua")
 
 require("love.arg")
 require("love.callbacks")
@@ -8,6 +8,7 @@ require("love.callbacks")
 local noGameCode = false
 local invalidGamePath = nil
 
+print("[LUA] Define love.boot")
 function love.boot()
     require("love.filesystem")
     local arg0 = love.arg.getLow(arg) or "sd:/LOVEPower/LOVEPower.dol"
@@ -29,7 +30,7 @@ function love.boot()
     --love.filesystem.setFused(isFusedGame)
 
     love.setDeprecationOutput(true)
-
+    print("[LUA] Does the file exist ? "..tostring(love.filesystem.exists("main.lua")))
     if canHasGame and not (love.filesystem.exists("main.lua") or love.filesystem.exists("conf.lua")) then
         noGameCode = true
         canHasGame = false
@@ -37,11 +38,14 @@ function love.boot()
 
     if not canHasGame then
         local nogame = require("love.nogame")
-        nogame()
+        print("[LUA] No game to be found (boot.lua) : "..tostring(nogame))
+        love.nogame()
     end
 end
 
+print("[LUA] Define love.init")
 function love.init()
+    print("[LUA] Love Init called")
     local c = {
         --title = "LOVEPower", -- Not used in LOVEPower
         version = "0.1", -- TODO: Implement version checking
@@ -146,13 +150,13 @@ function love.init()
         error("Cannot load game at path '" .. invalidGamePath .. "'\nMake sure a folder exists at the specified path.")
     end
 end
-
-local print, debug, tostring = print, debug, tostring
+print("[LUA] END 1")
+--local print, debug, tostring = print, debug, tostring
 
 local inerror = false
 
 local function error_printer(msg, layer)
-    print((debug.traceback("Error: " .. tostring(msg), 1 + (layer or 1)):gsub("\n[^\n]+$", "")))
+    print("[LUA] "..(debug.traceback("Error: " .. tostring(msg), 1 + (layer or 1)):gsub("\n[^\n]+$", "")))
 end
 
 local function deferErrHand(...)
@@ -176,6 +180,8 @@ if not ok then return end
 ok = safe_call(love.init)
 if not ok then return end
 
+print("[LUA] love.run : "..tostring(love.run))
+
 if love.run then
-    safe_call(love.run)
+    love.run()
 end

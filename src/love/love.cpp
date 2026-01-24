@@ -70,7 +70,7 @@ static const luaL_Reg modules[] = {
     {"love.arg", luaopen_love_arg},
     {"love.callbacks", luaopen_love_callbacks},
     {"love.boot", luaopen_love_boot},
-    {"love.jitsetup", luaopen_love_jitsetup},
+    //{"love.jitsetup", luaopen_love_jitsetup},
     {0, 0}
 };
 
