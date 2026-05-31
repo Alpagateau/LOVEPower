@@ -8,14 +8,14 @@ local invalidGamePath = nil
 
 function love.boot()
     require("love.filesystem")
-    local arg0 = love.arg.getLow(arg) or "sd:/lovewii/lovewii.dol"
+    local arg0 = love.arg.getLow(arg) or "sd:/LOVEPower/LOVEPower.dol"
     if type(arg0) == "string" and arg0 ~= "" then
         -- Dolpin or something like that
-        arg0 = "sd:/lovewii/"
+        arg0 = "sd:/LOVEPower/"
     else
         arg0 = arg0:match("^(.-)[^/\\]-$") -- Gets the directory of the executable
         if arg0 == nil or arg0 == "" then -- Fall back to default
-            arg0 = "sd:/lovewii/"
+            arg0 = "sd:/LOVEPower/"
         end
     end
     love.filesystem.init(arg0)

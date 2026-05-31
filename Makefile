@@ -40,7 +40,7 @@ SOURCES		:=	src \
 				src/lib/GRRLIB/grrlib
 
 DATA		:=	data 
-INCLUDES    :=  src/lib/ 
+INCLUDES    :=  src/lib/ src/lib/pngu
 
 #---------------------------------------------------------------------------------
 # options for code generation

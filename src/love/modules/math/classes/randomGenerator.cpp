@@ -1,4 +1,4 @@
-#include "RandomGenerator.hpp"
+#include "randomGenerator.hpp"
 
 #include <cmath>
 #include <sstream>
