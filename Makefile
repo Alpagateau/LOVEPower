@@ -1,3 +1,4 @@
+VERBOSE=1
 #---------------------------------------------------------------------------------
 # Clear the implicit built in rules
 #---------------------------------------------------------------------------------
@@ -20,6 +21,7 @@ BUILD		:=	build
 SOURCES		:=	src \
 				src/love/ \
 				src/love/modules/ \
+				src/love/modules/debug/ \
 				src/love/modules/graphics \
 				src/love/modules/graphics/classes \
 				src/love/modules/audio \
@@ -55,8 +57,10 @@ LDFLAGS	    =  -g $(MACHDEP) -Wl,-Map,$(notdir $@).map
 # any extra libraries we wish to link with the project
 # the order can-be/is critical
 #---------------------------------------------------------------------------------
-LIBS	:= -lfreetype -lbz2 -lpng -ljpeg -lz -lfat
-LIBS	+= -L$(CURDIR)/lib/ -lluajit
+# removed luajit
+LIBS  := -L/opt/devkitpro/portlibs/ppc/lib
+LIBS	+= -lfreetype -lbrotlidec -lbrotlienc -lbrotlicommon -lbz2 -lpng -ljpeg -lz -lfat -llua
+LIBS	+= -L$(CURDIR)/lib/
 LIBS	+= -lwiiuse
 LIBS	+= -lmodplay -laesnd
 LIBS	+= -lbte -logc -lm
@@ -66,7 +70,7 @@ else
     SOURCES  += src/love/modules/mii
     CFLAGS   += -DUSE_LIBMII
     CXXFLAGS += -DUSE_LIBMII
-	LIBS     += -lmii -lisfs
+		LIBS     += -lmii -lisfs
 endif
 
 ifeq ($(strip $(USE_PHYSICS)),true)
@@ -80,7 +84,7 @@ endif
 # list of directories containing libraries, this must be the top level containing
 # include and lib
 #---------------------------------------------------------------------------------
-LIBDIRS	:= $(PORTLIBS)
+LIBDIRS	:= $(PORTLIBS) 
 
 #---------------------------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional
