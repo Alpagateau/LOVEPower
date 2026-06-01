@@ -19,6 +19,8 @@ Modified libraries will be available in source code for ease of user compiling
 - Implement transforms (love.graphics)
 - Implement physics (love.physics) (Via Box2d)
 - Fix freezing with some graphical functions (love.graphics)
+- Make an app launcher for multiple lua scripts. (no lua needed)
+- Test the API (using https://github.com/ellraiser/love-test)
 
 Not in a specific order.
 
