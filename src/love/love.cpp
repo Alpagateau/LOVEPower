@@ -115,6 +115,8 @@ int luaopen_love(lua_State *L) {
     luastate["love"]["hasDeprecationOutput"] = love::hasDeprecationOutput;
     luastate["love"]["setDeprecationOutput"] = love::setDeprecationOutput;
     
+    luastate["love"]["debugLog"] = [](std::string s){printf("[LOVEPower] %s\n", s.c_str());};
+    
     lua_getglobal(L, "love");
     return 1;
 }
