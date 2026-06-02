@@ -62,7 +62,7 @@ local function error_printer(msg, layer)
 end
 
 local function writeLog(msg)
-    local f = io.open("sd:/love_error_lua.log", "a")
+    local f = io.open("sd://love_error_lua.log", "a")
     if f then
         f:write(msg, "\n")
         f:close()

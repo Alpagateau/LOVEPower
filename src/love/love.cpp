@@ -4,6 +4,7 @@
 #include <sol/sol.hpp>
 extern "C" {
     #include <lua.h>
+    #include <stdlib.h>
 }
 
 #include "love.hpp"
@@ -198,6 +199,15 @@ namespace love {
             );
 
             lua_State *L = luastate.lua_state();
+
+            //luastate.script(
+            //    "package.path = package.path .. \"sd://LOVEPower/game/?.lua\""
+            //);
+            const char* var_name  = "LUA_PATH";
+            const char* var_value = "?;?.lua;sd://LOVEPower/game/?.lua";
+
+            putenv("LUA_PATH=?;?.lua;sd://LOVEPower/game/?.lua");
+
             love_preload(L, luaopen_love_jitsetup, "love.jitsetup");
             lua_getglobal(L, "require");
             lua_pushstring(L, "love.jitsetup");
