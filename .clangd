@@ -1,0 +1,22 @@
+CompileFlags:
+  Compiler: powerpc-eabi-g++
+  Add:
+    - --target=powerpc-eabi
+    - -DHW_RVL
+    - -DGEKKO
+    - --sysroot=/opt/devkitpro/devkitPPC/powerpc-eabi
+    - -nostdinc
+    - -nostdinc++
+    # C++ stdlib headers
+    - -isystem/opt/devkitpro/devkitPPC/powerpc-eabi/include/c++/16.1.0
+    - -isystem/opt/devkitpro/devkitPPC/powerpc-eabi/include/c++/16.1.0/powerpc-eabi
+    - -isystem/opt/devkitpro/devkitPPC/powerpc-eabi/include/c++/16.1.0/backward
+    # C headers
+    - -isystem/opt/devkitpro/devkitPPC/powerpc-eabi/include
+    - -isystem/opt/devkitpro/devkitPPC/lib/gcc/powerpc-eabi/16.1.0/include
+    - -isystem/opt/devkitpro/devkitPPC/lib/gcc/powerpc-eabi/16.1.0/include-fixed
+    - -isystem/opt/devkitpro/libogc/include
+  Remove:
+    - -mrvl
+    - -meabi
+    - -mhard-float
