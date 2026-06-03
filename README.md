@@ -15,6 +15,7 @@ Want support? Join the [Discord Server](https://discord.gg/wqkQxKNNu5)
 Modified libraries will be available in source code for ease of user compiling
 
 # TODO
+- Implement require semantics
 - Implement Mii data (love.mii) (Via libmii)
 - Implement transforms (love.graphics)
 - Implement physics (love.physics) (Via Box2d)
