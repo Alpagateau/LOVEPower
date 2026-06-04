@@ -182,11 +182,12 @@ void UNUSED();
 void UNUSED(...) {};
 
 void logError(const std::string &msg) {
-  std::ofstream log("sd:/LOVEPower_cpp_error.log",
+  std::ofstream log("sd:/lovepower_cpp_error.log",
                     std::ios::app); // append mode
   if (log.is_open()) {
     log << msg << std::endl;
   }
+  printf("[LOVE ERROR] %s\n", msg.c_str());
 }
 
 bool hasDeprecationOutput() { return _deprecationOutput; }
@@ -222,6 +223,11 @@ int initialize(int argc, char **argv) {
     lua_getglobal(L, "require");
     lua_pushstring(L, "love.jitsetup");
     lua_call(L, 1, 0);
+    luastate.open_libraries(sol::lib::base, sol::lib::package,
+                            sol::lib::coroutine, sol::lib::string, sol::lib::os,
+                            sol::lib::math, sol::lib::table, sol::lib::debug,
+                            sol::lib::bit32, sol::lib::io, sol::lib::utf8,
+                            sol::lib::ffi, sol::lib::jit);
 
     love_preload(L, luaopen_love, "love");
     lua_getglobal(L, "require");
@@ -275,7 +281,7 @@ int exit() {
 
   return 0;
 }
-}
+} // namespace love
 
 bool hasDeprecationOutput() { return love::_deprecationOutput; }
 

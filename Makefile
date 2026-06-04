@@ -18,30 +18,27 @@ include $(DEVKITPPC)/wii_rules
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
 SOURCES		:=	src \
-				src/love/ \
-				src/love/common \
-				src/love/modules/ \
-				src/love/modules/graphics \
-				src/love/modules/graphics/classes \
-				src/love/modules/audio \
-				src/love/modules/audio/classes \
-				src/love/modules/filesystem \
-				src/love/modules/system \
-				src/love/modules/timer \
-				src/love/modules/math \
-				src/love/modules/math/classes \
-				src/love/modules/event \
-				src/love/modules/wiimote \
-				src/love/modules/wiimote/classes \
-				src/love/modules/window \
-				src/love/modules/data \
-				src/love/modules/thread \
-				src/love/modules/thread/sdl \
-				src/lib/FreeTypeGX \
-				src/lib/audiogc \
-				src/lib/pngu \
-				src/lib/GRRLIB \
-				src/lib/GRRLIB/grrlib
+			src/love/ \
+			src/love/modules/ \
+			src/love/modules/debug/ \
+			src/love/modules/graphics \
+			src/love/modules/graphics/classes \
+			src/love/modules/audio \
+			src/love/modules/audio/classes \
+			src/love/modules/filesystem \
+			src/love/modules/system \
+			src/love/modules/timer \
+			src/love/modules/math \
+			src/love/modules/math/classes \
+			src/love/modules/event \
+			src/love/modules/wiimote \
+			src/love/modules/wiimote/classes \
+			src/love/modules/data \
+			src/lib/FreeTypeGX \
+			src/lib/audiogc \
+			src/lib/pngu \
+			src/lib/GRRLIB \
+			src/lib/GRRLIB/grrlib
 
 DATA		:=	data 
 INCLUDES    :=  src/lib/ src/lib/pngu
@@ -50,7 +47,7 @@ INCLUDES    :=  src/lib/ src/lib/pngu
 # options for code generation
 #---------------------------------------------------------------------------------
 
-CFLAGS  	=  -g -O2 -Wall $(MACHDEP) $(INCLUDE) -DLOVE_WII  -I./src/lib/pngu
+CFLAGS  	=  -g -O2 -Wall $(MACHDEP) $(INCLUDE)
 CXXFLAGS	=  $(CFLAGS)
 
 LDFLAGS	    =  -g $(MACHDEP) -Wl,-Map,$(notdir $@).map
@@ -62,7 +59,7 @@ LDFLAGS	    =  -g $(MACHDEP) -Wl,-Map,$(notdir $@).map
 # removed luajit
 LIBS  := -L/opt/devkitpro/portlibs/ppc/lib
 LIBS  += -lfreetype
-#LIBS  += -lbrotlidec -lbrotlienc -lbrotlicommon
+LIBS  += -lbrotlidec -lbrotlienc -lbrotlicommon
 LIBS	+= -lbz2 -lpng -ljpeg -lz -lfat -llua
 LIBS	+= -L$(CURDIR)/lib/
 LIBS	+= -lwiiuse
