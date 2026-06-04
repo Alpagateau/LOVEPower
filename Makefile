@@ -74,7 +74,7 @@ endif
 
 ifeq ($(strip $(NO_LUAJIT)),true)
 # just use regular lua
-LIBS    += -llua5.1
+LIBS    += -llua
 else
 LIBS	 += -lluajit
 CFLAGS   += -DUSE_LUAJIT
