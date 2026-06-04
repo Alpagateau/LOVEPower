@@ -36,6 +36,8 @@ SOURCES		:=	src \
 				src/love/modules/wiimote/classes \
 				src/love/modules/window \
 				src/love/modules/data \
+				src/love/modules/thread \
+				src/love/modules/thread/sdl \
 				src/lib/FreeTypeGX \
 				src/lib/audiogc \
 				src/lib/pngu \
@@ -49,7 +51,7 @@ INCLUDES    :=  src/lib/ src/lib/pngu
 # options for code generation
 #---------------------------------------------------------------------------------
 
-CFLAGS  	=  -g -O2 -Wall $(MACHDEP) $(INCLUDE)
+CFLAGS  	=  -g -O2 -Wall $(MACHDEP) $(INCLUDE) -DLOVE_WII
 CXXFLAGS	=  $(CFLAGS)
 
 LDFLAGS	    =  -g $(MACHDEP) -Wl,-Map,$(notdir $@).map
@@ -89,9 +91,13 @@ ifeq ($(strip $(NO_LUAJIT)),true)
 # just use regular lua
 LIBS    += -llua
 else
-LIBS	 += -L$(CURDIR)/lib/ -lluajit
+LIBS	 += -lluajit -lSDL # SDL is used for threads
 CFLAGS   += -DUSE_LUAJIT
 CXXFLAGS += -DUSE_LUAJIT
+endif
+
+ifeq ($(strip $(USE_PHYSICS)),)
+	USE_PHYSICS := true
 endif
 
 ifeq ($(strip $(USE_PHYSICS)),true)
@@ -100,7 +106,14 @@ ifeq ($(strip $(USE_PHYSICS)),true)
 
 	CFLAGS   += -DUSE_PHYSICS
 	CXXFLAGS += -DUSE_PHYSICS
-	SOURCES  += src/lib/box2d
+	SOURCES  += src/lib/Box2D \
+					src/lib/Box2D/Collision \
+					src/lib/Box2D/Collision/Shapes \
+					src/lib/Box2D/Common \
+					src/lib/Box2D/Dynamics \
+					src/lib/Box2D/Dynamics/Contacts \
+					src/lib/Box2D/Dynamics/Joints \
+
 endif
 
 #---------------------------------------------------------------------------------
@@ -227,7 +240,7 @@ $(OFILES_SOURCES) : $(HFILES)
 #---------------------------------------------------------------------------------
 	@echo $(notdir $<)
 	$(bin2o)
-	@echo "$@ : $*.h" > $*.d
+	@echo "$@ : $*.h" > $*_lua.d
 
 %.lua.h: %.lua
 	@echo "LUA     $<"
@@ -242,7 +255,7 @@ $(OFILES_SOURCES) : $(HFILES)
 #---------------------------------------------------------------------------------
 	@echo $(notdir $<)
 	$(bin2o)
-	@echo "$@ : $*.h" > $*.d
+	@echo "$@ : $*.h" > $*_ttf.d
 
 %.ttf.h: %.ttf
 	@echo "TTF     $<"

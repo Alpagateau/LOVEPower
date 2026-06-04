@@ -27,7 +27,10 @@ extern "C" {
 #ifndef NO_LIBMII
 #include "modules/mii/miimodule.hpp"
 #endif
+#include "modules/physics/box2d/wrap_Physics.h"
 #include "modules/window/window.hpp"
+
+#include "common/Exception.h"
 
 #include "arg_lua.h"
 #include "boot_lua.h"
@@ -51,35 +54,29 @@ extern "C" {
    std::to_string(LOVE_VERSION_MINOR) + "." +                                  \
    std::to_string(LOVE_VERSION_REVISION) + "-" + LOVE_VERSION_SUFFIX)
 
-static const luaL_Reg modules[] = {{"love", luaopen_love},
-                                   {"love.graphics", luaopen_love_graphics},
-                                   {"love.filesystem", luaopen_love_filesystem},
-                                   {"love.data", luaopen_love_data},
-                                   {"love.timer", luaopen_love_timer},
-                                   {"love.system", luaopen_love_system},
-                                   {"love.audio", luaopen_love_audio},
-                                   {"love.math", luaopen_love_math},
-                                   {"love.event", luaopen_love_event},
-                                   {"love.wiimote", luaopen_love_wiimote},
-#ifdef USE_LIBMII
-                                   {"love.mii", luaopen_love_mii},
-#endif
-                                   {"love.window", luaopen_love_window},
-                                   {"love.nogame", luaopen_love_nogame},
-                                   {"love.arg", luaopen_love_arg},
-                                   {"love.callbacks", luaopen_love_callbacks},
-                                   {"love.boot", luaopen_love_boot},
-                                   {"love.jitsetup", luaopen_love_jitsetup},
-                                   {0, 0}};
+extern int luaopen_love_physics(lua_State *);
 
-static int love_preload(lua_State *L, lua_CFunction f,
-                        const char *name) { // From Love2D
-  lua_getglobal(L, "package");
-  lua_getfield(L, -1, "preload");
-  lua_pushcfunction(L, f);
-  lua_setfield(L, -2, name);
-  lua_pop(L, 2);
-  return 0;
+static const luaL_Reg modules[] = {
+    {"love", luaopen_love}, {"love.graphics", luaopen_love_graphics},
+    {"love.filesystem", luaopen_love_filesystem},
+    {"love.data", luaopen_love_data}, {"love.timer", luaopen_love_timer},
+    {"love.system", luaopen_love_system}, {"love.audio", luaopen_love_audio},
+    {"love.math", luaopen_love_math}, {"love.event", luaopen_love_event},
+    {"love.wiimote", luaopen_love_wiimote},
+#ifdef USE_LIBMII
+    {"love.mii", luaopen_love_mii},
+#endif
+    {"love.window", luaopen_love_window},
+    {"love.physics", love::physics::box2d::luaopen_love_physics},
+
+    static int love_preload(lua_State *L, lua_CFunction f,
+                            const char *name){// From Love2D
+                                              lua_getglobal(L, "package");
+lua_getfield(L, -1, "preload");
+lua_pushcfunction(L, f);
+lua_setfield(L, -2, name);
+lua_pop(L, 2);
+return 0;
 }
 
 int luaopen_love(lua_State *L) {
