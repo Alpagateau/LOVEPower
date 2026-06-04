@@ -174,15 +174,112 @@ void logError(const std::string &msg) {
     log << msg << std::endl;
   }
   printf("[LOVE ERROR] %s\n", msg.c_str());
+    }
+
+    bool hasDeprecationOutput() {
+        return _deprecationOutput;
+    }
+
+    void setDeprecationOutput(bool deprecationOutput) {
+        _deprecationOutput = deprecationOutput;
+    }
+
+    std::tuple<int, int, int, std::string> getVersion() {
+        return _version;
+    }
+
+    int initialize(int argc, char** argv) {
+        //int retval = 1;
+        sol::state luastate;
+
+        try {
+            luastate.open_libraries(
+                sol::lib::base,
+                sol::lib::package,
+                sol::lib::coroutine,
+                sol::lib::string,
+                sol::lib::os,
+                sol::lib::math,
+                sol::lib::table,
+                sol::lib::debug,
+                sol::lib::bit32,
+                sol::lib::io,
+                sol::lib::utf8
+                #ifdef USE_LUAJIT
+                ,
+                sol::lib::ffi,
+                sol::lib::jit
+                #endif
+            );
+
+            lua_State *L = luastate.lua_state();
+            love_preload(L, luaopen_love_jitsetup, "love.jitsetup");
+            lua_getglobal(L, "require");
+            lua_pushstring(L, "love.jitsetup");
+            lua_call(L, 1, 0);
+
+            love_preload(L, luaopen_love, "love");
+            lua_getglobal(L, "require");
+            lua_pushstring(L, "love");
+            lua_call(L, 1, 1);
+
+            lua_pop(L, 1);
+
+            love::event::__init(luastate);
+            love::audio::__init(luastate);
+            love::graphics::__init(luastate);
+            love::filesystem::__init(luastate, argc, argv);
+            love::timer::__init(luastate);
+            love::wiimote::__init(luastate);
+            #ifdef USE_LIBMII
+                love::mii::__init(luastate);
+            #endif
+
+            luastate["arg"] = luastate.create_table();
+            for (int i = 0; i < argc; i++) {
+                luastate["arg"][i + 1] = argv[i];
+            }
+
+            lua_pop(L, 1);
+
+            lua_getglobal(L, "require");
+            lua_pushstring(L, "love.boot");
+            lua_call(L, 1, 1);
+
+            //retval = 0;
+            int done = 0;
+
+            /* if (lua_type(L, -1) == LUA_TSTRING && strcmp(lua_tostring(L, -1), "restart") == 0) {
+                done = 1;
+            }
+            if (lua_isnumber(L, -1)) {
+                retval = (int)lua_tonumber(L, -1);
+            } */
+            lua_close(L);
+        
+            return done;
+        } catch (const std::exception &e) {
+            logError(std::string("Exception during initialization: ") + e.what());
+
+            return 0;
+        }
+    }
+
+    int exit() {
+        GRRLIB_Exit();
+        std::exit(0);
+
+        return 0;
+    }
 }
 
-bool hasDeprecationOutput() { return _deprecationOutput; }
+bool hasDeprecationOutput() { return love::_deprecationOutput; }
 
 void setDeprecationOutput(bool deprecationOutput) {
-  _deprecationOutput = deprecationOutput;
+  love::_deprecationOutput = deprecationOutput;
 }
 
-std::tuple<int, int, int, std::string> getVersion() { return _version; }
+std::tuple<int, int, int, std::string> getVersion() { return love::_version; }
 
 int initialize(int argc, char **argv) {
   // int retval = 1;
@@ -258,7 +355,7 @@ int initialize(int argc, char **argv) {
 
     return done;
   } catch (const std::exception &e) {
-    logError(std::string("Exception during initialization: ") + e.what());
+    love::logError(std::string("Exception during initialization: ") + e.what());
 
     return 0;
   }
@@ -269,5 +366,4 @@ int exit() {
   std::exit(0);
 
   return 0;
-}
 } // namespace love

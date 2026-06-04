@@ -84,6 +84,15 @@ CFLAGS   += -DUSE_LUAJIT
 CXXFLAGS += -DUSE_LUAJIT
 endif
 
+ifeq ($(strip $(NO_LUAJIT)),true)
+# just use regular lua
+LIBS    += -llua
+else
+LIBS	 += -L$(CURDIR)/lib/ -lluajit
+CFLAGS   += -DUSE_LUAJIT
+CXXFLAGS += -DUSE_LUAJIT
+endif
+
 ifeq ($(strip $(USE_PHYSICS)),true)
 	SOURCES  += src/love/modules/physics
 	CFLAGS   += -DUSE_PHYSICS
