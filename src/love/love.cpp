@@ -57,26 +57,31 @@ extern "C" {
 extern int luaopen_love_physics(lua_State *);
 
 static const luaL_Reg modules[] = {
-    {"love", luaopen_love}, {"love.graphics", luaopen_love_graphics},
+    {"love", luaopen_love},
+    {"love.graphics", luaopen_love_graphics},
     {"love.filesystem", luaopen_love_filesystem},
-    {"love.data", luaopen_love_data}, {"love.timer", luaopen_love_timer},
-    {"love.system", luaopen_love_system}, {"love.audio", luaopen_love_audio},
-    {"love.math", luaopen_love_math}, {"love.event", luaopen_love_event},
+    {"love.data", luaopen_love_data},
+    {"love.timer", luaopen_love_timer},
+    {"love.system", luaopen_love_system},
+    {"love.audio", luaopen_love_audio},
+    {"love.math", luaopen_love_math},
+    {"love.event", luaopen_love_event},
     {"love.wiimote", luaopen_love_wiimote},
 #ifdef USE_LIBMII
     {"love.mii", luaopen_love_mii},
 #endif
     {"love.window", luaopen_love_window},
     {"love.physics", love::physics::box2d::luaopen_love_physics},
+    {NULL, NULL}};
 
-    static int love_preload(lua_State *L, lua_CFunction f,
-                            const char *name){// From Love2D
-                                              lua_getglobal(L, "package");
-lua_getfield(L, -1, "preload");
-lua_pushcfunction(L, f);
-lua_setfield(L, -2, name);
-lua_pop(L, 2);
-return 0;
+static int love_preload(lua_State *L, lua_CFunction f,
+                        const char *name) { // From Love2D
+  lua_getglobal(L, "package");
+  lua_getfield(L, -1, "preload");
+  lua_pushcfunction(L, f);
+  lua_setfield(L, -2, name);
+  lua_pop(L, 2);
+  return 0;
 }
 
 int luaopen_love(lua_State *L) {
@@ -170,7 +175,6 @@ int luaopen_love_jitsetup(lua_State *L) {
 namespace love {
 void UNUSED();
 void UNUSED(...) {};
-
 void logError(const std::string &msg) {
   std::ofstream log("sd:/LOVEPower_cpp_error.log",
                     std::ios::app); // append mode
@@ -186,6 +190,95 @@ void setDeprecationOutput(bool deprecationOutput) {
 }
 
 std::tuple<int, int, int, std::string> getVersion() { return _version; }
+
+int initialize(int argc, char **argv) {
+  // int retval = 1;
+  sol::state luastate;
+
+  try {
+    luastate.open_libraries(sol::lib::base, sol::lib::package,
+                            sol::lib::coroutine, sol::lib::string, sol::lib::os,
+                            sol::lib::math, sol::lib::table, sol::lib::debug,
+                            sol::lib::bit32, sol::lib::io, sol::lib::utf8
+#ifdef USE_LUAJIT
+                            ,
+                            sol::lib::ffi, sol::lib::jit
+#endif
+    );
+
+    lua_State *L = luastate.lua_state();
+
+    // luastate.script(
+    //     "package.path = package.path .. \"sd://LOVEPower/game/?.lua\""
+    //);
+
+    love_preload(L, luaopen_love_jitsetup, "love.jitsetup");
+    lua_getglobal(L, "require");
+    lua_pushstring(L, "love.jitsetup");
+    lua_call(L, 1, 0);
+
+    love_preload(L, luaopen_love, "love");
+    lua_getglobal(L, "require");
+    lua_pushstring(L, "love");
+    lua_call(L, 1, 1);
+
+    lua_pop(L, 1);
+
+    love::event::__init(luastate);
+    love::audio::__init(luastate);
+    love::graphics::__init(luastate);
+    love::filesystem::__init(luastate, argc, argv);
+    love::timer::__init(luastate);
+    love::wiimote::__init(luastate);
+#ifdef USE_LIBMII
+    love::mii::__init(luastate);
+#endif
+
+    luastate["arg"] = luastate.create_table();
+    for (int i = 0; i < argc; i++) {
+      luastate["arg"][i + 1] = argv[i];
+    }
+
+    lua_pop(L, 1);
+
+    lua_getglobal(L, "require");
+    lua_pushstring(L, "love.boot");
+    lua_call(L, 1, 1);
+
+    // retval = 0;
+    int done = 0;
+
+    /* if (lua_type(L, -1) == LUA_TSTRING && strcmp(lua_tostring(L, -1),
+    "restart") == 0) { done = 1;
+    }
+    if (lua_isnumber(L, -1)) {
+        retval = (int)lua_tonumber(L, -1);
+    } */
+    lua_close(L);
+
+    return done;
+  } catch (const std::exception &e) {
+    logError(std::string("Exception during initialization: ") + e.what());
+
+    return 0;
+  }
+}
+
+int exit() {
+  GRRLIB_Exit();
+  std::exit(0);
+
+  return 0;
+}
+}
+
+bool hasDeprecationOutput() { return love::_deprecationOutput; }
+
+void setDeprecationOutput(bool deprecationOutput) {
+  love::_deprecationOutput = deprecationOutput;
+}
+
+std::tuple<int, int, int, std::string> getVersion() { return love::_version; }
 
 int initialize(int argc, char **argv) {
   // int retval = 1;
@@ -249,89 +342,6 @@ int initialize(int argc, char **argv) {
 
     return done;
   } catch (const std::exception &e) {
-    logError(std::string("Exception during initialization: ") + e.what());
-
-    return 0;
-  }
-}
-
-int exit() {
-  GRRLIB_Exit();
-  std::exit(0);
-
-  return 0;
-}
-} // namespace love
-
-bool hasDeprecationOutput() { return love::_deprecationOutput; }
-
-void setDeprecationOutput(bool deprecationOutput) {
-  love::_deprecationOutput = deprecationOutput;
-}
-
-std::tuple<int, int, int, std::string> getVersion() { return love::_version; }
-
-int initialize(int argc, char **argv) {
-  // int retval = 1;
-  sol::state luastate;
-
-  try {
-    luastate.open_libraries(sol::lib::base, sol::lib::package,
-                            sol::lib::coroutine, sol::lib::string, sol::lib::os,
-                            sol::lib::math, sol::lib::table, sol::lib::debug,
-                            sol::lib::bit32, sol::lib::io, sol::lib::utf8,
-                            sol::lib::ffi, sol::lib::jit);
-
-    lua_State *L = luastate.lua_state();
-
-    luastate["LUA_PATH"] = "sd://LOVEPower/game";
-
-    love_preload(L, luaopen_love_jitsetup, "love.jitsetup");
-    lua_getglobal(L, "require");
-    lua_pushstring(L, "love.jitsetup");
-    lua_call(L, 1, 0);
-
-    love_preload(L, luaopen_love, "love");
-    lua_getglobal(L, "require");
-    lua_pushstring(L, "love");
-    lua_call(L, 1, 1);
-
-    lua_pop(L, 1);
-
-    love::event::__init(luastate);
-    love::audio::__init(luastate);
-    love::graphics::__init(luastate);
-    love::filesystem::__init(luastate, argc, argv);
-    love::timer::__init(luastate);
-    love::wiimote::__init(luastate);
-#ifndef NO_LIBMII
-    love::mii::__init(luastate);
-#endif
-
-    luastate["arg"] = luastate.create_table();
-    for (int i = 0; i < argc; i++) {
-      luastate["arg"][i + 1] = argv[i];
-    }
-
-    lua_pop(L, 1);
-
-    lua_getglobal(L, "require");
-    lua_pushstring(L, "love.boot");
-    lua_call(L, 1, 1);
-
-    // retval = 0;
-    int done = 0;
-
-    /* if (lua_type(L, -1) == LUA_TSTRING && strcmp(lua_tostring(L, -1),
-    "restart") == 0) { done = 1;
-    }
-    if (lua_isnumber(L, -1)) {
-        retval = (int)lua_tonumber(L, -1);
-    } */
-    lua_close(L);
-
-    return done;
-  } catch (const std::exception &e) {
     love::logError(std::string("Exception during initialization: ") + e.what());
 
     return 0;
@@ -343,4 +353,4 @@ int exit() {
   std::exit(0);
 
   return 0;
-} // namespace love
+}
