@@ -59,7 +59,10 @@ LDFLAGS	    =  -g $(MACHDEP) -Wl,-Map,$(notdir $@).map
 # any extra libraries we wish to link with the project
 # the order can-be/is critical
 #---------------------------------------------------------------------------------
-LIBS	:= -lfreetype -lbz2 -lpng -ljpeg -lz -lfat
+# removed luajit
+LIBS  := -L/opt/devkitpro/portlibs/ppc/lib
+LIBS	+= -lfreetype -lbrotlidec -lbrotlienc -lbrotlicommon -lbz2 -lpng -ljpeg -lz -lfat -llua
+LIBS	+= -L$(CURDIR)/lib/
 LIBS	+= -lwiiuse
 LIBS	+= -lmodplay -laesnd
 LIBS	+= -lbte -logc -lm

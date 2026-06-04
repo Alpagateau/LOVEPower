@@ -5,7 +5,6 @@
 #endif
 
 #include <string>
-#define SOL_ALL_SAFETIES_ON 1
 #include "love/love.hpp"
 
 int main(int argc, char **argv) {
