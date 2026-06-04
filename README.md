@@ -8,6 +8,7 @@ Want support? Join the [Discord Server](https://discord.gg/wqkQxKNNu5)
 
 # Compiling
 
+<<<<<<< HEAD
 1. Download, compile and install [Lua for Wii](https://wiibrew.org/wiki/Lua_for_Wii). You'll need to modify the default LUA_PATH and add 'sd://LOVEPower/game/?.lua'
 2. (Optional) Download and install [libmii](https://wiibrew.org/wiki/Libmii).
 3. Download, compile and install [SDL-Wii](https://github.com/GuglioIsStupid/sdl-wii).
