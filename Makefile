@@ -19,20 +19,29 @@ TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
 SOURCES		:=	src \
 			src/love/ \
+			src/love/common/ \
 			src/love/modules/ \
-			src/love/modules/debug/ \
-			src/love/modules/graphics \
-			src/love/modules/graphics/classes \
 			src/love/modules/audio \
 			src/love/modules/audio/classes \
+			src/love/modules/data \
+			src/love/modules/debug/ \
+			src/love/modules/event \
 			src/love/modules/filesystem \
-			src/love/modules/system \
-			src/love/modules/timer \
+			src/love/modules/graphics \
+			src/love/modules/graphics/classes \
 			src/love/modules/math \
 			src/love/modules/math/classes \
-			src/love/modules/event \
+			src/love/modules/mii \
+			src/love/modules/mii/classes \
+			src/love/modules/physics/ \
+			src/love/modules/physics/box2d \
+			src/love/modules/system \
+			src/love/modules/thread \
+			src/love/modules/thread/sdl \
+			src/love/modules/timer \
 			src/love/modules/wiimote \
 			src/love/modules/wiimote/classes \
+			src/love/modules/window \
 			src/love/modules/data \
 			src/lib/FreeTypeGX \
 			src/lib/audiogc \
@@ -47,7 +56,7 @@ INCLUDES    :=  src/lib/ src/lib/pngu
 # options for code generation
 #---------------------------------------------------------------------------------
 
-CFLAGS  	=  -g -O2 -Wall $(MACHDEP) $(INCLUDE)
+CFLAGS  	=  -DLOVE_WII -g -O2 -Wall $(MACHDEP) $(INCLUDE)
 CXXFLAGS	=  $(CFLAGS)
 
 LDFLAGS	    =  -g $(MACHDEP) -Wl,-Map,$(notdir $@).map
