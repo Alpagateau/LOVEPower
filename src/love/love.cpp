@@ -72,7 +72,12 @@ static const luaL_Reg modules[] = {
 #endif
     {"love.window", luaopen_love_window},
     {"love.physics", love::physics::box2d::luaopen_love_physics},
-    {NULL, NULL}};
+    {"love.nogame", luaopen_love_nogame},
+    {"love.arg", luaopen_love_arg},
+    {"love.callbacks", luaopen_love_callbacks},
+    {"love.boot", luaopen_love_boot},
+    {"love.jitsetup", luaopen_love_jitsetup},
+    {0, 0}};
 
 static int love_preload(lua_State *L, lua_CFunction f,
                         const char *name) { // From Love2D
@@ -175,6 +180,7 @@ int luaopen_love_jitsetup(lua_State *L) {
 namespace love {
 void UNUSED();
 void UNUSED(...) {};
+
 void logError(const std::string &msg) {
   std::ofstream log("sd:/LOVEPower_cpp_error.log",
                     std::ios::app); // append mode
@@ -255,7 +261,6 @@ int initialize(int argc, char **argv) {
         retval = (int)lua_tonumber(L, -1);
     } */
     lua_close(L);
-
     return done;
   } catch (const std::exception &e) {
     logError(std::string("Exception during initialization: ") + e.what());
@@ -354,3 +359,12 @@ int exit() {
 
   return 0;
 }
+
+void logError(const std::string &msg) {
+  std::ofstream log("sd:/lovewii_cpp_error.log", std::ios::app); // append mode
+  if (log.is_open()) {
+    log << msg << std::endl;
+  }
+  printf("[LOVE ERROR] %s\n", msg.c_str());
+}
+
