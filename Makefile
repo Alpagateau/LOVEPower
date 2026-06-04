@@ -1,4 +1,3 @@
-VERBOSE=1
 #---------------------------------------------------------------------------------
 # Clear the implicit built in rules
 #---------------------------------------------------------------------------------
@@ -51,7 +50,7 @@ INCLUDES    :=  src/lib/ src/lib/pngu
 # options for code generation
 #---------------------------------------------------------------------------------
 
-CFLAGS  	=  -g -O2 -Wall $(MACHDEP) $(INCLUDE) -DLOVE_WII
+CFLAGS  	=  -g -O2 -Wall $(MACHDEP) $(INCLUDE) -DLOVE_WII  -I./src/lib/pngu
 CXXFLAGS	=  $(CFLAGS)
 
 LDFLAGS	    =  -g $(MACHDEP) -Wl,-Map,$(notdir $@).map
@@ -60,12 +59,7 @@ LDFLAGS	    =  -g $(MACHDEP) -Wl,-Map,$(notdir $@).map
 # any extra libraries we wish to link with the project
 # the order can-be/is critical
 #---------------------------------------------------------------------------------
-# removed luajit
-LIBS  := -L/opt/devkitpro/portlibs/ppc/lib
-LIBS  += -lfreetype
-LIBS  += -lbrotlidec -lbrotlienc -lbrotlicommon
-LIBS	+= -lbz2 -lpng -ljpeg -lz -lfat -llua
-LIBS	+= -L$(CURDIR)/lib/
+LIBS	:= -lfreetype -lbz2 -lpng -ljpeg -lz -lfat
 LIBS	+= -lwiiuse
 LIBS	+= -lmodplay -laesnd
 LIBS	+= -lbte -logc -lm
@@ -75,16 +69,7 @@ else
     SOURCES  += src/love/modules/mii
     CFLAGS   += -DUSE_LIBMII
     CXXFLAGS += -DUSE_LIBMII
-		LIBS     += -lmii -lisfs
-endif
-
-ifeq ($(strip $(NO_LUAJIT)),true)
-# just use regular lua
-LIBS    += -llua
-else
-LIBS	 += -L$(CURDIR)/lib/ -lluajit
-CFLAGS   += -DUSE_LUAJIT
-CXXFLAGS += -DUSE_LUAJIT
+	LIBS     += -lmii -lisfs
 endif
 
 ifeq ($(strip $(NO_LUAJIT)),true)
@@ -121,7 +106,7 @@ endif
 # list of directories containing libraries, this must be the top level containing
 # include and lib
 #---------------------------------------------------------------------------------
-LIBDIRS	:= $(PORTLIBS) 
+LIBDIRS	:= $(PORTLIBS)
 
 #---------------------------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional
@@ -271,3 +256,4 @@ $(OFILES_SOURCES) : $(HFILES)
 #---------------------------------------------------------------------------------
 endif
 #---------------------------------------------------------------------------------
+>>>>>>> f602d5d (Renamed a few files, for capitalization issues)
