@@ -68,7 +68,7 @@ LDFLAGS	    =  -g $(MACHDEP) -Wl,-Map,$(notdir $@).map
 # removed luajit
 LIBS  := -L/opt/devkitpro/portlibs/ppc/lib
 LIBS  += -lfreetype
-LIBS  += -lbrotlidec -lbrotlienc -lbrotlicommon
+#LIBS  += -lbrotlidec -lbrotlienc -lbrotlicommon
 LIBS	+= -lbz2 -lpng -ljpeg -lz -lfat -llua
 LIBS	+= -L$(CURDIR)/lib/
 LIBS	+= -lwiiuse

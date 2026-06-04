@@ -4,6 +4,7 @@
     #define SOL_LUAJIT 0
 #endif
 
+#include <stdio.h>
 #include <string>
 #include "love/love.hpp"
 

@@ -9,10 +9,10 @@ extern "C" {
 
 #include "love.hpp"
 
-#include "modules/graphics/classes/font.hpp"
-#include "modules/graphics/classes/texture.hpp"
+//#include "modules/graphics/classes/font.hpp"
+//#include "modules/graphics/classes/texture.hpp"
 
-#include "modules/wiimote/classes/wiimoteController.hpp"
+//#include "modules/wiimote/classes/wiimoteController.hpp"
 
 #include "modules/audio/audio.hpp"
 #include "modules/data/data.hpp"
@@ -30,7 +30,7 @@ extern "C" {
 #include "modules/physics/box2d/wrap_Physics.h"
 #include "modules/window/window.hpp"
 
-#include "common/Exception.h"
+//#include "common/Exception.h"
 
 #include "arg_lua.h"
 #include "boot_lua.h"
@@ -43,7 +43,7 @@ extern "C" {
 #include <fstream>
 #include <iostream>
 
-#include "dirent.h"
+//#include "dirent.h"
 
 #define LOVE_VERSION_MAJOR 0
 #define LOVE_VERSION_MINOR 1
@@ -58,20 +58,21 @@ extern int luaopen_love_physics(lua_State *);
 
 static const luaL_Reg modules[] = {
     {"love", luaopen_love},
-    {"love.graphics", luaopen_love_graphics},
-    {"love.filesystem", luaopen_love_filesystem},
-    {"love.data", luaopen_love_data},
-    {"love.timer", luaopen_love_timer},
-    {"love.system", luaopen_love_system},
     {"love.audio", luaopen_love_audio},
-    {"love.math", luaopen_love_math},
+    {"love.data", luaopen_love_data},
     {"love.event", luaopen_love_event},
-    {"love.wiimote", luaopen_love_wiimote},
+    {"love.filesystem", luaopen_love_filesystem},
+    {"love.graphics", luaopen_love_graphics},
+    {"love.math", luaopen_love_math},
 #ifdef USE_LIBMII
     {"love.mii", luaopen_love_mii},
 #endif
-    {"love.window", luaopen_love_window},
     {"love.physics", love::physics::box2d::luaopen_love_physics},
+    {"love.system", luaopen_love_system},
+    //{"love.thread", luaopen_love_thread},
+    {"love.timer", luaopen_love_timer},
+    {"love.wiimote", luaopen_love_wiimote},
+    {"love.window", luaopen_love_window},
     {"love.nogame", luaopen_love_nogame},
     {"love.arg", luaopen_love_arg},
     {"love.callbacks", luaopen_love_callbacks},
