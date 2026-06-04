@@ -168,12 +168,11 @@ int luaopen_love_jitsetup(lua_State *L) {
 }
 
 namespace love {
-void logError(const std::string &msg) {
-  std::ofstream log("sd:/lovepower_cpp_error.log", std::ios::app); // append mode
-  if (log.is_open()) {
-    log << msg << std::endl;
-  }
-  printf("[LOVE ERROR] %s\n", msg.c_str());
+    void logError(const std::string &msg) {
+        std::ofstream log("sd:/LOVEPower_cpp_error.log", std::ios::app); // append mode
+        if (log.is_open()) {
+            log << msg << std::endl;
+        }
     }
 
     bool hasDeprecationOutput() {
