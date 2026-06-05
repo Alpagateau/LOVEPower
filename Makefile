@@ -56,7 +56,7 @@ INCLUDES    :=  src/lib/ src/lib/pngu
 # options for code generation
 #---------------------------------------------------------------------------------
 
-CFLAGS  	=  -DLOVE_WII -g -O2 -Wall $(MACHDEP) $(INCLUDE)
+CFLAGS  	=  -DLOVE_WII -g -O0 -Wall $(MACHDEP) $(INCLUDE)
 CXXFLAGS	=  $(CFLAGS)
 
 LDFLAGS	    =  -g $(MACHDEP) -Wl,-Map,$(notdir $@).map

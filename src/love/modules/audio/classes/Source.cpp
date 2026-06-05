@@ -1,7 +1,6 @@
 #include "Source.hpp"
-
+#include "../audio.hpp"
 #include "../../../modules/filesystem/filesystem.hpp"
-
 #include <string>
 
 namespace love {
@@ -22,6 +21,17 @@ namespace love {
 
             this->file = file;
             this->type = mode;
+            registerSource(this);
+        }
+
+        Source::~Source()
+        {
+          unregisterSource(this);
+          if(audiogcPlayer)
+          {
+            delete audiogcPlayer;
+            audiogcPlayer = nullptr;
+          }
         }
 
         void Source::play() {

@@ -1,3 +1,4 @@
+#include <ogc/gx.h>
 #include <sol/sol.hpp>
 #include <grrlib.h>
 #include <ogc/conf.h>
@@ -20,13 +21,15 @@
 
 #include "../../common/math.h"
 
+#define NAN_GUARD(x) if(std::isnan( (x) )) return;
+
 extern "C" {
     #include <lua.h>
 }
 
 namespace {
     unsigned int color             = 0xffffffff;
-    unsigned int backgroundColor   = 0xff000000;
+    unsigned int backgroundColor   = 0x00000000;
     love::graphics::Font *curFont  = nullptr;
     
     int width  = 640;
@@ -208,6 +211,7 @@ namespace love {
                 for (unsigned int i = 0; i < size / 2; i++) {
                     GX_Color1u32(color); // Colour is always the same
                     GX_Position3f32(verts[i].x, verts[i].y, 0.0f);
+                    GX_TexCoord2f32(0.0, 0.0);
                 }
             GX_End();
         }
@@ -230,6 +234,7 @@ namespace love {
                 for (unsigned int i = 0; i < size / 2; i++) {
                     GX_Color1u32(color);
                     GX_Position3f32(verts[i].x, verts[i].y, 0.0f);
+                    GX_TexCoord2f32(0.0, 0.0);
                 }
             GX_End();
         }
@@ -243,6 +248,14 @@ namespace love {
             if (!texture.texture) {
                 return;
             }
+            NAN_GUARD(x)
+            NAN_GUARD(y)
+            NAN_GUARD(rotation)
+            NAN_GUARD(sx)
+            NAN_GUARD(sy)
+            NAN_GUARD(ox)
+            NAN_GUARD(oy)
+            
             float rotationDeg = rotation * (180.0f / LOVE_M_PI);
             float cos_r = cos(rotation);
             float sin_r = sin(rotation);
@@ -272,6 +285,13 @@ namespace love {
             if (!texture.texture) {
                 return;
             }
+            NAN_GUARD(x)
+            NAN_GUARD(y)
+            NAN_GUARD(rotation)
+            NAN_GUARD(sx)
+            NAN_GUARD(sy)
+            NAN_GUARD(ox)
+            NAN_GUARD(oy)
             float rotationDeg = rotation * (180.0f / LOVE_M_PI);
             float cos_r = cos(rotation);
             float sin_r = sin(rotation);
@@ -305,6 +325,7 @@ namespace love {
             _draw(texture, x, 0, 0, 1, 1, 0, 0);
         }
         void draw_x_y(love::graphics::Texture &texture, float x, float y) {
+
             _draw(texture, x, y, 0, 1, 1, 0, 0);
         }
         void draw_x_y_r(love::graphics::Texture &texture, float x, float y, float rotation) {
@@ -389,6 +410,7 @@ namespace love {
         }
 
         void _print(const std::string &text, float x, float y, float rotation, float sx, float sy, float ox, float oy) {
+          
             if (!curFont) {
                 throw std::runtime_error("No font set for printing text.");
             }
@@ -457,6 +479,7 @@ namespace love {
         void origin() {
             // reset color
             color = 0xffffffff;
+            GRRLIB_2dMode();
         }
 
         void _clear(float r, float g, float b, float a) {
@@ -464,8 +487,10 @@ namespace love {
             unsigned int g_int = static_cast<unsigned int>(g * 255);
             unsigned int b_int = static_cast<unsigned int>(b * 255);
             unsigned int a_int = static_cast<unsigned int>(a * 255);
-
-            GRRLIB_FillScreen((r_int << 24) | (g_int << 16) | (b_int << 8) | a_int);
+              
+            GXColor clear_color = {(u8)r_int, (u8)g_int, (u8)b_int, (u8)a_int};
+            GX_SetCopyClear(clear_color, GX_MAX_Z24);
+            //GRRLIB_FillScreen((r_int << 24) | (g_int << 16) | (b_int << 8) | a_int);
         }
 
         void clear_float4(float r, float g, float b, float a) {
@@ -481,7 +506,9 @@ namespace love {
         }
 
         void present() {
+            printf("[C++] present\n");
             GRRLIB_Render();
+            printf("[C++] presented \n");
         }
 
         void push() {

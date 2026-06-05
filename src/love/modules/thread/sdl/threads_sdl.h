@@ -3,6 +3,9 @@
 #include "../threads_love.h"
 #include "../Thread.h"
 #include <SDL/SDL.h>
+#include <ogc/cond.h>
+#include <ogc/lwp.h>
+#include <ogc/mutex.h>
 
 namespace love {
 namespace thread {
@@ -11,11 +14,11 @@ namespace sdl1 {
 // ------------------------------------------------------------------
 // Mutex
 // ------------------------------------------------------------------
-struct SDLMutex : public Mutex {
-    SDL_mutex* m;
+struct LWPMutex : public Mutex {
+    mutex_t* m;
 
-    SDLMutex();
-    ~SDLMutex() override;
+    LWPMutex();
+    ~LWPMutex() override;
 
     void lock() override;
     void unlock() override;
@@ -24,11 +27,11 @@ struct SDLMutex : public Mutex {
 // ------------------------------------------------------------------
 // Conditional
 // ------------------------------------------------------------------
-struct SDLConditional : public Conditional {
-    SDL_cond* c;
+struct LWPConditional : public Conditional {
+    cond_t* c;
 
-    SDLConditional();
-    ~SDLConditional() override;
+    LWPConditional();
+    ~LWPConditional() override;
 
     void signal() override;
     void broadcast() override;
@@ -38,12 +41,14 @@ struct SDLConditional : public Conditional {
 // ------------------------------------------------------------------
 // Thread
 // ------------------------------------------------------------------
-struct SDLThread : public Thread {
-    SDL_Thread* thread;
+struct LWPThread : public Thread {
+    lwp_t* thread;
+    uint8_t* stack;
     Threadable* t;
+    bool running;
 
-    SDLThread(Threadable* t);
-    ~SDLThread() override;
+    LWPThread(Threadable* t);
+    ~LWPThread() override;
 
     bool start() override;
     void wait() override;

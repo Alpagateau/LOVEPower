@@ -1,75 +1,126 @@
+#include <cstdio>
+#include <gccore.h>
+#include <malloc.h>
 #include "../threads_love.h"
 #include "../Thread.h"
 #include <SDL/SDL.h>
+#include <ogc/mutex.h>
+#include <ogc/cond.h>
 
 namespace love {
 namespace thread {
 namespace sdl1 {
 
 // Derived Mutex for SDL1
-struct SDLMutex : public Mutex {
-    SDL_mutex* m;
+struct LWPMutex : public Mutex {
+    //SDL_mutex* m;
+    mutex_t m;
 
-    SDLMutex() { m = SDL_CreateMutex(); }
-    ~SDLMutex() override { SDL_DestroyMutex(m); }
+    LWPMutex() { 
+      //m = SDL_CreateMutex(); 
+      s32 v = LWP_MutexInit(&m, false);
+      if(v < 0)
+        printf("Couldnt create a mutex");
+    }
+    ~LWPMutex() { 
+      //SDL_DestroyMutex(m); 
+      LWP_MutexDestroy(m);
+    }
 
-    void lock() override { SDL_mutexP(m); }
-    void unlock() override { SDL_mutexV(m); }
+    void lock() { 
+      //SDL_mutexP(m); 
+      LWP_MutexLock(m);
+    }
+    void unlock() { 
+      //SDL_mutexV(m); 
+      LWP_MutexUnlock(m);
+    }
 };
 
 // Derived Conditional for SDL1
-struct SDLConditional : public Conditional {
-    SDL_cond* c;
+struct LWPConditional : public Conditional {
+    cond_t c;
 
-    SDLConditional() { c = SDL_CreateCond(); }
-    ~SDLConditional() override { SDL_DestroyCond(c); }
+    LWPConditional() { 
+      LWP_CondInit(&c);
+    }
+    ~LWPConditional() { 
+      LWP_CondDestroy(c);
+    }
 
-    void signal() override { SDL_CondSignal(c); }
-    void broadcast() override { SDL_CondBroadcast(c); }
+    void signal() override { 
+      //SDL_CondSignal(c); 
+      LWP_CondSignal(c);
+    }
+    void broadcast() override { 
+      //SDL_CondBroadcast(c); 
+      LWP_CondBroadcast(c);
+    }
 
     bool wait(Mutex* mutex, int timeout=-1) override {
         if (!mutex) return false;
-        SDL_mutex* mtx = static_cast<SDLMutex*>(mutex)->m;
-        if (timeout < 0) return SDL_CondWait(c, mtx) == 0;
-        else return SDL_CondWaitTimeout(c, mtx, timeout) == 0;
+        mutex_t mtx = static_cast<LWPMutex*>(mutex)->m;
+        if (timeout < 0) return LWP_CondWait(c, mtx) == 0;
+        else return LWP_CondWait(c, mtx) == 0;
     }
 };
 
-// Thread wrapper for SDL1
-struct SDLThread : public Thread {
-    SDL_Thread* thread;
+struct LWPThread : public Thread {
+    lwp_t thread;
+    uint8_t* stack;
     Threadable* t;
+    bool running;
 
-    SDLThread(Threadable* t) : thread(nullptr), t(t) {}\
-    ~SDLThread() override {}
+    LWPThread(Threadable* t) : thread(LWP_THREAD_NULL), t(t), running(false) {
+        // Allocate a 128KB stack for Lua, aligned to 32 bytes (crucial for Wii)
+        stack = (uint8_t*)memalign(32, 128 * 1024);
+    }
+
+    ~LWPThread() override {
+        if (stack) free(stack);
+    }
 
     bool start() override {
-        thread = SDL_CreateThread(thread_runner, t);
-        return thread != nullptr;
+        if (running) return false;
+        
+        running = true;
+        // Priority 64 is middle-of-the-road. 
+        int res = LWP_CreateThread(&thread, thread_runner, this, stack, 128 * 1024, 64);
+        if (res != 0) {
+            running = false;
+            return false;
+        }
+        return true;
     }
 
     void wait() override {
-        if(thread) SDL_WaitThread(thread, nullptr);
+        if (thread != LWP_THREAD_NULL) {
+            LWP_JoinThread(thread, nullptr);
+            thread = LWP_THREAD_NULL;
+        }
     }
 
     bool isRunning() override {
-        return thread != nullptr;
+        return running;
     }
 
 private:
-    static int thread_runner(void* data) {
-        Threadable* t = static_cast<Threadable*>(data);
-        t->threadFunction();
-        return 0;
+    static void* thread_runner(void* data) {
+        LWPThread* self = static_cast<LWPThread*>(data);
+        self->t->threadFunction();
+        self->running = false; // Accurately mark as finished!
+        return nullptr;
     }
 };
 
 } // namespace sdl1
 
 // Factory functions
-Mutex* newMutex() { return new sdl1::SDLMutex(); }
-Conditional* newConditional() { return new sdl1::SDLConditional(); }
-Thread* newThread(Threadable* t) { return new sdl1::SDLThread(t); }
+Mutex* newMutex() { return new sdl1::LWPMutex(); }
+Conditional* newConditional() { return new sdl1::LWPConditional(); }
+//Thread* newThread(Threadable* t) { return new sdl1::LWPThread(t); }
+
+Thread* newThread(Threadable* t) { return new sdl1::LWPThread(t); }
 
 } // namespace thread
 } // namespace love

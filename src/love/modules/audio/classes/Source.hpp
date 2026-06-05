@@ -9,6 +9,7 @@ namespace love {
     namespace audio {
         struct Source : public Object {
             Source(std::string file, std::string mode);
+            ~Source();
             
             void play();
             void stop(); // sets time back to 0

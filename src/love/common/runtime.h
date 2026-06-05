@@ -23,41 +23,35 @@
 
 // LOVE
 #include "config.h"
-#include "types.h"
 #include "deprecation.h"
+#include "types.h"
 
 // Lua
 extern "C" {
-	#define LUA_COMPAT_ALL
-	#include <lua.h>
-	#include <lualib.h>
-	#include <lauxlib.h>
+#define LUA_COMPAT_ALL
+#include <lauxlib.h>
+#include <lua.h>
+#include <lualib.h>
 }
 
 // C++
-#include <exception>
 #include <algorithm>
+#include <exception>
 
-namespace love
-{
+namespace love {
 
 // Forward declarations.
 struct Object;
 struct Module;
 struct Reference;
 
-template<typename T>
-struct StrongRef;
+template <typename T> struct StrongRef;
 
 /**
  * Registries represent special tables which can be accessed with
  * luax_insistregistry and luax_getregistry.
  **/
-enum Registry
-{
-	REGISTRY_MODULES,
-	REGISTRY_OBJECTS
-};
+enum Registry { REGISTRY_MODULES, REGISTRY_OBJECTS };
 
 /**
  * This structure wraps all Lua-exposed objects. It exists in the
@@ -65,34 +59,32 @@ enum Registry
  * though the Object it refers to is light userdata in the sense
  * that it is not allocated by the Lua VM.
  **/
-struct Proxy
-{
-	// Holds type information (see types.h).
-	love::Type *type;
+struct Proxy {
+  // Holds type information (see types.h).
+  love::Type *type;
 
-	// Pointer to the actual object.
-	Object *object;
+  // Pointer to the actual object.
+  Object *object;
 };
 
 /**
  * A Module with Lua wrapper functions and other data.
  **/
-struct WrappedModule
-{
-	// The module containing the functions.
-	Module *module;
+struct WrappedModule {
+  // The module containing the functions.
+  Module *module;
 
-	// The name for the table to put the functions in, without the 'love'-prefix.
-	const char *name;
+  // The name for the table to put the functions in, without the 'love'-prefix.
+  const char *name;
 
-	// The type of this module.
-	love::Type *type;
+  // The type of this module.
+  love::Type *type;
 
-	// The functions of the module (last element {0,0}).
-	const luaL_Reg *functions;
+  // The functions of the module (last element {0,0}).
+  const luaL_Reg *functions;
 
-	// A list of functions which expose the types of the modules (last element 0).
-	const lua_CFunction *types;
+  // A list of functions which expose the types of the modules (last element 0).
+  const lua_CFunction *types;
 };
 
 /**
@@ -185,10 +177,12 @@ void luax_pushstring(lua_State *L, const std::string &str);
  **/
 void luax_pushpointerasstring(lua_State *L, const void *pointer);
 
-
-bool luax_boolflag(lua_State *L, int table_index, const char *key, bool defaultValue);
-int luax_intflag(lua_State *L, int table_index, const char *key, int defaultValue);
-double luax_numberflag(lua_State *L, int table_index, const char *key, double defaultValue);
+bool luax_boolflag(lua_State *L, int table_index, const char *key,
+                   bool defaultValue);
+int luax_intflag(lua_State *L, int table_index, const char *key,
+                 int defaultValue);
+double luax_numberflag(lua_State *L, int table_index, const char *key,
+                       double defaultValue);
 
 int luax_checkintflag(lua_State *L, int table_index, const char *key);
 
@@ -199,9 +193,8 @@ int luax_checkintflag(lua_State *L, int table_index, const char *key);
  * @param L The Lua state.
  * @param idx The index on the stack.
  */
-inline float luax_tofloat(lua_State *L, int idx)
-{
-	return static_cast<float>(lua_tonumber(L, idx));
+inline float luax_tofloat(lua_State *L, int idx) {
+  return static_cast<float>(lua_tonumber(L, idx));
 }
 
 /**
@@ -209,19 +202,16 @@ inline float luax_tofloat(lua_State *L, int idx)
  *
  * @see luax_tofloat
  */
-inline float luax_checkfloat(lua_State *L, int idx)
-{
-	return static_cast<float>(luaL_checknumber(L, idx));
+inline float luax_checkfloat(lua_State *L, int idx) {
+  return static_cast<float>(luaL_checknumber(L, idx));
 }
 
-inline lua_Number luax_checknumberclamped01(lua_State *L, int idx)
-{
-	return std::min(std::max(luaL_checknumber(L, idx), 0.0), 1.0);
+inline lua_Number luax_checknumberclamped01(lua_State *L, int idx) {
+  return std::min(std::max(luaL_checknumber(L, idx), 0.0), 1.0);
 }
 
-inline lua_Number luax_optnumberclamped01(lua_State *L, int idx, double def)
-{
-	return std::min(std::max(luaL_optnumber(L, idx, def), 0.0), 1.0);
+inline lua_Number luax_optnumberclamped01(lua_State *L, int idx, double def) {
+  return std::min(std::max(luaL_optnumber(L, idx, def), 0.0), 1.0);
 }
 
 /**
@@ -272,10 +262,10 @@ void luax_setfuncs(lua_State *L, const luaL_Reg *l);
 int luax_require(lua_State *L, const char *name);
 
 /**
- * Register a module in the love table. The love table will be created if it does not exist.
- * NOTE: The module-object is expected to have a +1 reference count before calling
- * this function, as it doesn't retain the object itself but Lua will release it
- * upon garbage collection.
+ * Register a module in the love table. The love table will be created if it
+ * does not exist. NOTE: The module-object is expected to have a +1 reference
+ * count before calling this function, as it doesn't retain the object itself
+ * but Lua will release it upon garbage collection.
  * @param L The Lua state.
  **/
 int luax_register_module(lua_State *L, const WrappedModule &m);
@@ -283,22 +273,24 @@ int luax_register_module(lua_State *L, const WrappedModule &m);
 /**
  * Inserts a module with 'name' into the package.preloaded table.
  * @param f The function to be called when the module is opened.
- * @param name The name of the module, with 'love'-prefix, for instance 'love.graphics'.
+ * @param name The name of the module, with 'love'-prefix, for instance
+ * 'love.graphics'.
  **/
 int luax_preload(lua_State *L, lua_CFunction f, const char *name);
 
 /**
  * Register a new type.
- * NOTE: The type is passed by pointer instead of reference because calling va_start
- * on a reference is undefined behaviour.
+ * NOTE: The type is passed by pointer instead of reference because calling
+ * va_start on a reference is undefined behaviour.
  * @param type The type.
- * @param ... The list of lists of member functions for the type. (of type luaL_Reg*)
+ * @param ... The list of lists of member functions for the type. (of type
+ * luaL_Reg*)
  **/
 int luax_register_type(lua_State *L, love::Type *type, ...);
 
 /**
  * Pushes the metatable of the specified type onto the stack.
-**/
+ **/
 void luax_gettypemetatable(lua_State *L, const love::Type &type);
 
 /**
@@ -311,8 +303,8 @@ void luax_gettypemetatable(lua_State *L, const love::Type &type);
 int luax_table_insert(lua_State *L, int tindex, int vindex, int pos = -1);
 
 /**
- * Register a new searcher function for package.loaders. This can for instance enable
- * loading of files through love.filesystem using standard require.
+ * Register a new searcher function for package.loaders. This can for instance
+ * enable loading of files through love.filesystem using standard require.
  * @param L The Lua state.
  * @param f The searcher function.
  * @param pos The position to insert the loader in.
@@ -322,23 +314,20 @@ int luax_register_searcher(lua_State *L, lua_CFunction f, int pos = -1);
 /**
  * Pushes a Lua representation of the given object onto the stack, creating and
  * storing the Lua representation in a weak table if it doesn't exist yet.
- * NOTE: The object will be retained by Lua and released upon garbage collection.
+ * NOTE: The object will be retained by Lua and released upon garbage
+ * collection.
  * @param L The Lua state.
  * @param type The type information of the object.
  * @param object The pointer to the actual object.
  **/
 void luax_pushtype(lua_State *L, love::Type &type, love::Object *object);
 
-template <typename T>
-void luax_pushtype(lua_State *L, T *object)
-{
-	luax_pushtype(L, T::type, object);
+template <typename T> void luax_pushtype(lua_State *L, T *object) {
+  luax_pushtype(L, T::type, object);
 }
 
-template <typename T>
-void luax_pushtype(lua_State *L, StrongRef<T> &object)
-{
-	luax_pushtype(L, T::type, object);
+template <typename T> void luax_pushtype(lua_State *L, StrongRef<T> &object) {
+  luax_pushtype(L, T::type, object);
 }
 
 /**
@@ -347,7 +336,8 @@ void luax_pushtype(lua_State *L, StrongRef<T> &object)
  * This should only be used when performance is an extreme concern and the
  * object is not ever expected to be pushed to Lua again, as it prevents the
  * Lua-side objects from working in some cases when used as keys in tables.
- * NOTE: The object will be retained by Lua and released upon garbage collection.
+ * NOTE: The object will be retained by Lua and released upon garbage
+ * collection.
  * @param L The Lua state.
  * @param type The type information of the object.
  * @param object The pointer to the actual object.
@@ -364,16 +354,18 @@ void luax_rawnewtype(lua_State *L, love::Type &type, love::Object *object);
 bool luax_istype(lua_State *L, int idx, love::Type &type);
 
 /**
- * Gets the function love.module.function and puts it on top of the stack (alone). If the
- * love table, the module, or the function does not exist, an error is returned.
+ * Gets the function love.module.function and puts it on top of the stack
+ * (alone). If the love table, the module, or the function does not exist, an
+ * error is returned.
  * @return An error if nonexistent, or 1 if successful.
  **/
 int luax_getfunction(lua_State *L, const char *module, const char *function);
 
 /**
- * Converts an object into another object by the specified function love.module.function.
- * The conversion function must accept a single object of the relevant type as a parameter,
- * and returnone value. If the function does not exist (see luax_getfunction), an error is returned.
+ * Converts an object into another object by the specified function
+ * love.module.function. The conversion function must accept a single object of
+ * the relevant type as a parameter, and returnone value. If the function does
+ * not exist (see luax_getfunction), an error is returned.
  *
  * Note that the initial object at idx is replaced by the new object.
  *
@@ -382,12 +374,14 @@ int luax_getfunction(lua_State *L, const char *module, const char *function);
  * @param module The module in the love table.
  * @param function The function in the module.
  **/
-int luax_convobj(lua_State *L, int idx, const char *module, const char *function);
+int luax_convobj(lua_State *L, int idx, const char *module,
+                 const char *function);
 
 /**
- * Converts an object into another object by the specified function love.module.function.
- * The conversion function must accept a single object of the relevant type as its first parameter,
- * and return one value. If the function does not exist (see luax_getfunction), an error is returned.
+ * Converts an object into another object by the specified function
+ * love.module.function. The conversion function must accept a single object of
+ * the relevant type as its first parameter, and return one value. If the
+ * function does not exist (see luax_getfunction), an error is returned.
  *
  * Note that the initial object at idx is replaced by the new object.
  *
@@ -397,20 +391,26 @@ int luax_convobj(lua_State *L, int idx, const char *module, const char *function
  * @param module The module in the love table.
  * @param function The function in the module.
  **/
-int luax_convobj(lua_State *L, const int idxs[], int n, const char *module, const char *function);
-int luax_convobj(lua_State *L, const std::vector<int>& idxs, const char *module, const char *function);
+int luax_convobj(lua_State *L, const int idxs[], int n, const char *module,
+                 const char *function);
+int luax_convobj(lua_State *L, const std::vector<int> &idxs, const char *module,
+                 const char *function);
 
 // pcall versions of the above
-int luax_pconvobj(lua_State *L, int idx, const char *module, const char *function);
-int luax_pconvobj(lua_State *L, const int idxs[], int n, const char *module, const char *function);
-int luax_pconvobj(lua_State *L, const std::vector<int>& idxs, const char *module, const char *function);
+int luax_pconvobj(lua_State *L, int idx, const char *module,
+                  const char *function);
+int luax_pconvobj(lua_State *L, const int idxs[], int n, const char *module,
+                  const char *function);
+int luax_pconvobj(lua_State *L, const std::vector<int> &idxs,
+                  const char *module, const char *function);
 
 /**
- * 'Insist' that a table 'k' exists in the table at idx. Insistence involves that the
- * table (k) is created if it does not exist in the table at idx. The table at idx must
- * pre-exist, however. Also note that if the a non-table value exists at the specified
- * location, it will be overwritten with a new table. The insisted table, and only the
- * insisted table, will be placed on top of the stack.
+ * 'Insist' that a table 'k' exists in the table at idx. Insistence involves
+ * that the table (k) is created if it does not exist in the table at idx. The
+ * table at idx must pre-exist, however. Also note that if the a non-table value
+ * exists at the specified location, it will be overwritten with a new table.
+ * The insisted table, and only the insisted table, will be placed on top of the
+ * stack.
  *
  * @param idx The index on the stack containing a table.
  * @param k The name of the table we are insisting exist.
@@ -475,38 +475,41 @@ lua_State *luax_getpinnedthread(lua_State *L);
  * code.
  **/
 void luax_markdeprecated(lua_State *L, const char *name, APIType api);
-void luax_markdeprecated(lua_State *L, const char *name, APIType api, DeprecationType type, const char *replacement);
+void luax_markdeprecated(lua_State *L, const char *name, APIType api,
+                         DeprecationType type, const char *replacement);
 
 extern "C" { // Also called from luasocket
-	int luax_typerror(lua_State *L, int narg, const char *tname);
+int luax_typerror(lua_State *L, int narg, const char *tname);
 }
 
 int luax_enumerror(lua_State *L, const char *enumName, const char *value);
-int luax_enumerror(lua_State *L, const char *enumName, const std::vector<std::string> &values, const char *value);
+int luax_enumerror(lua_State *L, const char *enumName,
+                   const std::vector<std::string> &values, const char *value);
 
 template <typename T>
-void luax_checktablefields(lua_State *L, int idx, const char *enumName, bool (*getConstant)(const char *, T &))
-{
-	luaL_checktype(L, idx, LUA_TTABLE);
+void luax_checktablefields(lua_State *L, int idx, const char *enumName,
+                           bool (*getConstant)(const char *, T &)) {
+  luaL_checktype(L, idx, LUA_TTABLE);
 
-	// We want to error for invalid / misspelled fields in the table.
-	lua_pushnil(L);
-	while (lua_next(L, idx))
-	{
-		if (lua_type(L, -2) != LUA_TSTRING)
-			luax_typerror(L, -2, "string");
+  // We want to error for invalid / misspelled fields in the table.
+  lua_pushnil(L);
+  while (lua_next(L, idx)) {
+    if (lua_type(L, -2) != LUA_TSTRING)
+      luax_typerror(L, -2, "string");
 
-		const char *key = luaL_checkstring(L, -2);
-		T constantvalue;
+    const char *key = luaL_checkstring(L, -2);
+    T constantvalue;
 
-		if (!getConstant(key, constantvalue))
-			luax_enumerror(L, enumName, key);
+    if (!getConstant(key, constantvalue))
+      luax_enumerror(L, enumName, key);
 
-		lua_pop(L, 1);
-	}
+    lua_pop(L, 1);
+  }
 }
 
-void luax_runwrapper(lua_State *L, const char *filedata, size_t datalen, const char *filename, const love::Type &type, void *ffifuncs);
+void luax_runwrapper(lua_State *L, const char *filedata, size_t datalen,
+                     const char *filename, const love::Type &type,
+                     void *ffifuncs);
 
 /**
  * Calls luax_objlen/lua_rawlen depending on version
@@ -514,8 +517,8 @@ void luax_runwrapper(lua_State *L, const char *filedata, size_t datalen, const c
 size_t luax_objlen(lua_State *L, int ndx);
 
 extern "C" { // Called by enet and luasocket
-	void luax_register(lua_State *L, const char *name, const luaL_Reg *l);
-	int luax_c_insistglobal(lua_State *L, const char *k);
+void luax_register(lua_State *L, const char *name, const luaL_Reg *l);
+int luax_c_insistglobal(lua_State *L, const char *k);
 }
 
 /**
@@ -526,98 +529,84 @@ extern "C" { // Called by enet and luasocket
  * @param type The type bit.
  **/
 template <typename T>
-T *luax_checktype(lua_State *L, int idx, const love::Type &type)
-{
-	if (lua_type(L, idx) != LUA_TUSERDATA)
-	{
-		const char *name = type.getName();
-		luax_typerror(L, idx, name);
-	}
+T *luax_checktype(lua_State *L, int idx, const love::Type &type) {
+  if (lua_type(L, idx) != LUA_TUSERDATA) {
+    const char *name = type.getName();
+    luax_typerror(L, idx, name);
+  }
 
-	Proxy *u = (Proxy *)lua_touserdata(L, idx);
+  Proxy *u = (Proxy *)lua_touserdata(L, idx);
 
-	if (u->type == nullptr || !u->type->isa(type))
-	{
-		const char *name = type.getName();
-		luax_typerror(L, idx, name);
-	}
+  if (u->type == nullptr || !u->type->isa(type)) {
+    const char *name = type.getName();
+    luax_typerror(L, idx, name);
+  }
 
-	if (u->object == nullptr)
-		luaL_error(L, "Cannot use object after it has been released.");
+  if (u->object == nullptr)
+    luaL_error(L, "Cannot use object after it has been released.");
 
-	return (T *)u->object;
+  return (T *)u->object;
+}
+
+template <typename T> T *luax_checktype(lua_State *L, int idx) {
+  return luax_checktype<T>(L, idx, T::type);
 }
 
 template <typename T>
-T *luax_checktype(lua_State *L, int idx)
-{
-	return luax_checktype<T>(L, idx, T::type);
+T *luax_ffi_checktype(Proxy *p, const love::Type &type = T::type) {
+  // FIXME: We need better type-checking...
+  if (p == nullptr || p->object == nullptr || p->type == nullptr ||
+      !p->type->isa(type))
+    return nullptr;
+  return (T *)p->object;
 }
 
-template <typename T>
-T *luax_ffi_checktype(Proxy *p, const love::Type &type = T::type)
-{
-	// FIXME: We need better type-checking...
-	if (p == nullptr || p->object == nullptr || p->type == nullptr || !p->type->isa(type))
-		return nullptr;
-	return (T *) p->object;
+template <typename T> T *luax_getmodule(lua_State *L, const love::Type &type) {
+  const char *name = type.getName();
+
+  luax_insistregistry(L, REGISTRY_MODULES);
+  lua_getfield(L, -1, name);
+
+  if (!lua_isuserdata(L, -1))
+    luaL_error(L, "Tried to get nonexistent module %s.", name);
+
+  Proxy *u = (Proxy *)lua_touserdata(L, -1);
+
+  if (u->type == nullptr || !u->type->isa(type))
+    luaL_error(L, "Incorrect module %s", name);
+
+  lua_pop(L, 2);
+
+  return (T *)u->object;
 }
 
-template <typename T>
-T *luax_getmodule(lua_State *L, const love::Type &type)
-{
-	const char *name = type.getName();
-
-	luax_insistregistry(L, REGISTRY_MODULES);
-	lua_getfield(L, -1, name);
-
-	if (!lua_isuserdata(L, -1))
-		luaL_error(L, "Tried to get nonexistent module %s.", name);
-
-	Proxy *u = (Proxy *)lua_touserdata(L, -1);
-
-	if (u->type == nullptr || !u->type->isa(type))
-		luaL_error(L, "Incorrect module %s", name);
-
-	lua_pop(L, 2);
-
-	return (T *)u->object;
+template <typename T> T *luax_getmodule(lua_State *L) {
+  return luax_getmodule<T>(L, T::type);
 }
 
-template <typename T>
-T *luax_getmodule(lua_State *L)
-{
-	return luax_getmodule<T>(L, T::type);
+template <typename T> T *luax_optmodule(lua_State *L, const love::Type &type) {
+  const char *name = type.getName();
+
+  luax_insistregistry(L, REGISTRY_MODULES);
+  lua_getfield(L, -1, name);
+
+  if (!lua_isuserdata(L, -1)) {
+    lua_pop(L, 2);
+    return 0;
+  }
+
+  Proxy *u = (Proxy *)lua_touserdata(L, -1);
+
+  if (!u->type->isa(type))
+    luaL_error(L, "Incorrect module %s", name);
+
+  lua_pop(L, 2);
+
+  return (T *)u->object;
 }
 
-template <typename T>
-T *luax_optmodule(lua_State *L, const love::Type &type)
-{
-	const char *name = type.getName();
-
-	luax_insistregistry(L, REGISTRY_MODULES);
-	lua_getfield(L, -1, name);
-
-	if (!lua_isuserdata(L, -1))
-	{
-		lua_pop(L, 2);
-		return 0;
-	}
-
-	Proxy *u = (Proxy *)lua_touserdata(L, -1);
-
-	if (!u->type->isa(type))
-		luaL_error(L, "Incorrect module %s", name);
-
-	lua_pop(L, 2);
-
-	return (T *) u->object;
-}
-
-template <typename T>
-T *luax_optmodule(lua_State *L)
-{
-	return luax_optmodule<T>(L, T::type);
+template <typename T> T *luax_optmodule(lua_State *L) {
+  return luax_optmodule<T>(L, T::type);
 }
 
 /**
@@ -629,80 +618,68 @@ T *luax_optmodule(lua_State *L)
  * @param type The type of the object.
  **/
 template <typename T>
-T *luax_totype(lua_State *L, int idx, const love::Type& /*type*/)
-{
-	T *o = (T *)(((Proxy *)lua_touserdata(L, idx))->object);
+T *luax_totype(lua_State *L, int idx, const love::Type & /*type*/) {
+  T *o = (T *)(((Proxy *)lua_touserdata(L, idx))->object);
 
-	if (o == nullptr)
-		luaL_error(L, "Cannot use object after it has been released.");
+  if (o == nullptr)
+    luaL_error(L, "Cannot use object after it has been released.");
 
-	return o;
+  return o;
 }
 
-template <typename T>
-T *luax_totype(lua_State *L, int idx)
-{
-	return luax_totype<T>(L, idx, T::type);
+template <typename T> T *luax_totype(lua_State *L, int idx) {
+  return luax_totype<T>(L, idx, T::type);
 }
 
 Type *luax_type(lua_State *L, int idx);
 
 /**
- * Converts any exceptions thrown by the passed lambda function into a Lua error.
- * lua_error (and luaL_error) cannot be called from inside the exception handler
- * because they use longjmp, which causes undefined behaviour when the
+ * Converts any exceptions thrown by the passed lambda function into a Lua
+ * error. lua_error (and luaL_error) cannot be called from inside the exception
+ * handler because they use longjmp, which causes undefined behaviour when the
  * destructor of the exception would have been called.
  **/
-template <typename T>
-int luax_catchexcept(lua_State *L, const T& func)
-{
-	bool should_error = false;
+template <typename T> int luax_catchexcept(lua_State *L, const T &func) {
+  bool should_error = false;
 
-	try
-	{
-		func();
-	}
-	catch (const std::exception &e)
-	{
-		should_error = true;
-		lua_pushstring(L, e.what());
-	}
+  try {
+    func();
+  } catch (const std::exception &e) {
+    should_error = true;
+    lua_pushstring(L, e.what());
+  }
 
-	if (should_error)
-		return luaL_error(L, "%s", lua_tostring(L, -1));
+  if (should_error)
+    return luaL_error(L, "%s", lua_tostring(L, -1));
 
-	return 0;
+  return 0;
 }
 
 template <typename T, typename F>
-int luax_catchexcept(lua_State *L, const T& func, const F& finallyfunc)
-{
-	bool should_error = false;
+int luax_catchexcept(lua_State *L, const T &func, const F &finallyfunc) {
+  bool should_error = false;
 
-	try
-	{
-		func();
-	}
-	catch (const std::exception &e)
-	{
-		should_error = true;
-		lua_pushstring(L, e.what());
-	}
+  try {
+    func();
+  } catch (const std::exception &e) {
+    should_error = true;
+    lua_pushstring(L, e.what());
+  }
 
-	finallyfunc(should_error);
+  finallyfunc(should_error);
 
-	if (should_error)
-		return luaL_error(L, "%s", lua_tostring(L, -1));
+  if (should_error)
+    return luaL_error(L, "%s", lua_tostring(L, -1));
 
-	return 0;
+  return 0;
 }
 
 /**
  * Compatibility shim for lua_resume
  * Exported because it's used in the launcher
  **/
-LOVE_EXPORT int luax_resume(lua_State *L, int nargs, int* nres);
+LOVE_EXPORT int luax_resume(lua_State *L, int nargs, int *nres);
 
-} // love
+} // namespace love
 
 #endif // LOVE_RUNTIME_H

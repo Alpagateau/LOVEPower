@@ -487,6 +487,7 @@ bool player::play() {
 
 			return false;
 		}
+    
 		if (LWP_CreateThread(&data.thread, thread_map[object_data->audio_type], this, data.thread_stackbase, data.thread_stack_size, data.thread_priority) < 0) {
 			data.playing = false;
 			data.true_stopped = true;
