@@ -538,6 +538,8 @@ static const lua_CFunction types[] =
 
 extern "C" int luaopen_love_physics(lua_State *L)
 {
+
+  printf("<== MODULE LOVE PHYSICS ==>\n");
 	Physics *instance = instance();
 	if (instance == nullptr)
 	{

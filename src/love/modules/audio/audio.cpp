@@ -85,6 +85,7 @@ void pause(love::audio::Source *source) { source->pause(); }
 } // namespace love
 
 int luaopen_love_audio(lua_State *L) {
+  printf("<== MODULE LOVE AUDIO ==>\n");
   sol::state_view luastate(L);
 
   luastate["love"]["audio"] = luastate.create_table_with(

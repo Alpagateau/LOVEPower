@@ -3,6 +3,7 @@
 #include <sol/sol.hpp>
 #include <tuple>
 #include <vector>
+#include <queue>
 extern "C" {
     #include <lua.h>
 }
@@ -11,8 +12,8 @@ namespace love {
     namespace event {
         typedef std::tuple<sol::object, sol::object, sol::object, sol::object, sol::object, sol::object, sol::object> event_t;
 
-        extern std::vector<event_t> events;
-        extern std::vector<event_t>::iterator currentEvent;
+        extern std::queue<event_t> events;
+        //extern std::queue<event_t>::iterator currentEvent;
 
         void __init(sol::state &luastate);
 

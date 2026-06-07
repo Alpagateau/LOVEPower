@@ -18,6 +18,7 @@ include $(DEVKITPPC)/wii_rules
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
 SOURCES		:=	src \
+			src/modules/ \
 			src/love/ \
 			src/love/common/ \
 			src/love/modules/ \
@@ -74,6 +75,7 @@ LIBS	+= -L$(CURDIR)/lib/
 LIBS	+= -lwiiuse
 LIBS	+= -lmodplay -laesnd
 LIBS	+= -lbte -logc -lm
+LIBS  += -lSDL # SDL is used for threads
 
 ifeq ($(strip $(NO_LIBMII)),true)
 else
@@ -88,20 +90,6 @@ ifeq ($(strip $(NO_LUAJIT)),true)
 LIBS    += -llua
 else
 LIBS	 += -lluajit
-CFLAGS   += -DUSE_LUAJIT
-CXXFLAGS += -DUSE_LUAJIT
-endif
-LIBS     +=  -lSDL # SDL is used for threads
-
-ifeq ($(strip $(USE_PHYSICS)),)
-	USE_PHYSICS := true
-endif
-
-ifeq ($(strip $(NO_LUAJIT)),true)
-# just use regular lua
-LIBS    += -llua
-else
-LIBS	 += -L$(CURDIR)/lib/ -lluajit
 CFLAGS   += -DUSE_LUAJIT
 CXXFLAGS += -DUSE_LUAJIT
 endif

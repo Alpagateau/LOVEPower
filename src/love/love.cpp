@@ -77,7 +77,7 @@ static const luaL_Reg modules[] = {
     {"love.callbacks", luaopen_love_callbacks},
     {"love.boot", luaopen_love_boot},
     {"love.jitsetup", luaopen_love_jitsetup},
-    {0, 0}};
+    {NULL, NULL}};
 
 static int love_preload(lua_State *L, lua_CFunction f,
                         const char *name) { // From Love2D
@@ -91,6 +91,8 @@ static int love_preload(lua_State *L, lua_CFunction f,
 
 int luaopen_love(lua_State *L) {
   sol::state_view luastate(L);
+
+  printf("<== MODULE LOVE ==>\n");
 
   lua_getglobal(L, "love");
   if (!lua_istable(L, -1)) {

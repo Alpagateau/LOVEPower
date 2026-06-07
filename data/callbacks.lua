@@ -23,19 +23,17 @@ end
 
 function love.run()
     if love.load then love.load(love.arg.parseGameArguments(arg), arg) end
-    Info("loaded")
     if love.timer then love.timer.step() end
-    Info("timer stepped")
     local dt = 0
 
     while true do
-        Info("single frame")
         if love.event then
             love.event.pump()
             while true do
-                Info("event")
-                local name, a, b, c, d, e, f = love.event.poll()
+                local success, name, a, b, c, d, e, f = pcall(love.event.poll)
+                if not success then Info("<ERROR> "..name) end
                 if not name then break end
+                Info("event >"..name)
                 if name == "quit" then
                     if not love.quit or not love.quit() then
                         return a or 0
@@ -44,33 +42,24 @@ function love.run()
                     love.handlers[name](a, b, c, d, e, f)
                 end
             end
-
             if love.timer then dt = love.timer.step() end
-            Info("timer")
             if love.wiimote then love.wiimote.update() end
-            Info("wiimote")
+--            Info("wiimote")
             if love.update then love.update(dt) end
-            Info("update")
+--            Info("update")
 
             if love.graphics and love.graphics.isActive() then
-                Info("graphics context")
                 love.graphics.origin()
-                Info("Origin")
+                --Info("Origin")
                 love.graphics.clear(love.graphics.getBackgroundColor()) -- TODO: Figure out why this freezes the game
-                Info("Clear")
+                --Info("Clear")
                 -- until then, render a rectangle
                 local lastColor = {love.graphics.getColor()}
-                Info("got last color")
                 love.graphics.setColor(love.graphics.getBackgroundColor())
-                Info("got bg color")
                 love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
-                Info("big rectangle")
                 love.graphics.setColor(unpack(lastColor))
-                Info("setColor")
                 if love.draw then love.draw() end
-                Info("Drawn")
                 love.graphics.present()
-                Info("Present")
             end
 
             love.timer.sleep(0.001)

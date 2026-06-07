@@ -173,6 +173,7 @@ namespace love {
 }
 
 int luaopen_love_wiimote(lua_State *L) {
+    printf("<== MODULE LOVE WIIMOTE ==>\n");
     sol::state_view luastate(L);
 
     luastate["love"]["wiimote"] = luastate.create_table_with(

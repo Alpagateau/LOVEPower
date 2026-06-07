@@ -70,6 +70,8 @@ namespace love {
 }
 
 int luaopen_love_timer(lua_State *L) {
+
+    printf("<== MODULE LOVE TIMER ==>\n");
     sol::state_view luastate(L);
 
     luastate["love"]["timer"] = luastate.create_table_with(

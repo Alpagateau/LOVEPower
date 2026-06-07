@@ -42,6 +42,9 @@ namespace {
 
 namespace love {
     namespace graphics {
+
+        std::string draw_log = "";
+
         void __init(sol::state &luastate) {
             GRRLIB_Init();
 
@@ -245,6 +248,8 @@ namespace love {
             float x, float y, float rotation, float sx, float sy,
             float ox, float oy
         ) {
+
+            draw_log += "_draw\n";
             if (!texture.texture) {
                 return;
             }
@@ -282,6 +287,9 @@ namespace love {
             float x, float y, float rotation, float sx, float sy,
             float ox, float oy
         ) {
+
+            draw_log += "_draw_quad\n";
+
             if (!texture.texture) {
                 return;
             }
@@ -506,7 +514,8 @@ namespace love {
         }
 
         void present() {
-            printf("[C++] present\n");
+            printf("[C++] presenting %s\n", draw_log.c_str());
+            draw_log.clear();
             GRRLIB_Render();
             printf("[C++] presented \n");
         }
@@ -571,6 +580,8 @@ namespace love {
 }
 
 int luaopen_love_graphics(lua_State *L) {
+  
+    printf("<== MODULE LOVE GFX ==>\n");
     sol::state_view luastate(L);
 
     luastate["love"]["graphics"] = luastate.create_table_with(
@@ -610,6 +621,12 @@ int luaopen_love_graphics(lua_State *L) {
         ),
         "setFont", love::graphics::setFont,
         "newFont", sol::overload(
+            love::graphics::newFont,
+            love::graphics::newFont_size,
+            love::graphics::newFont_file,
+            love::graphics::newFont_file_size
+        ),
+        "setNewFont", sol::overload(
             love::graphics::newFont,
             love::graphics::newFont_size,
             love::graphics::newFont_file,

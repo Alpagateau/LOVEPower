@@ -57,6 +57,8 @@ namespace love {
 }
 
 int luaopen_love_math(lua_State *L) {
+
+    printf("<== MODULE LOVE MATH ==>\n");
     sol::state_view luastate(L);
 
     luastate["love"]["math"] = luastate.create_table_with(

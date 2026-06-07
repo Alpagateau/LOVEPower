@@ -20,7 +20,8 @@ namespace love {
         bool updateMode(int width, int height, const sol::table& settings);
         bool updateMode_no_settings(int width, int height);
 
-        std::tuple<int, int, sol::table> getMode();
+        //std::tuple<int, int, sol::table> getMode();
+        int getMode(lua_State* L);
 
         bool isHighDPIAllowed();
 

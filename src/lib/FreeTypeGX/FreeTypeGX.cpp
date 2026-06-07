@@ -178,20 +178,26 @@ void FreeTypeGX::setDefaultMode() {
  */
 uint16_t FreeTypeGX::loadFont(uint8_t* fontBuffer, FT_Long bufferSize, FT_UInt pointSize, bool cacheAll) {
 	uint16_t numCached = 0;
-
+  printf("loadFont : unloadFont()\n");
 	this->unloadFont();
+  printf("loadFont : set the variables\n");
 	this->ftFontBuffer = (FT_Byte *)fontBuffer;
 	this->ftFontBufferSize = bufferSize;
 	this->ftPointSize = pointSize;
 
+  printf("loadFont : FT_New_Memory_Face\n");
 	FT_New_Memory_Face(this->ftLibrary, this->ftFontBuffer, this->ftFontBufferSize, 0, &this->ftFace);
+  printf("loadFont : FT_Set_Pixel_Sizes\n");
 	FT_Set_Pixel_Sizes(this->ftFace, 0, this->ftPointSize);
 
+  printf("loadFont : FT_HAS_KERNING\n");
 	this->ftKerningEnabled = FT_HAS_KERNING(this->ftFace);
 	this->ftAscender = this->ftPointSize * this->ftFace->ascender / this->ftFace->units_per_EM;
 	this->ftDescender = this->ftPointSize * this->ftFace->descender / this->ftFace->units_per_EM;
 
+  printf("loadFont : cache ? \n");
 	if (cacheAll) {
+    printf("loadFont : cacheGlyphDataComplete\n");
 		numCached = this->cacheGlyphDataComplete();
 	}
 	
@@ -212,17 +218,30 @@ uint16_t FreeTypeGX::loadFont(const uint8_t* fontBuffer, FT_Long bufferSize, FT_
  * This routine clears all members of the font map structure and frees all allocated memory back to the system.
  */
 void FreeTypeGX::unloadFont() {
+  printf("unloadFont\n");
+  printf("unloadFont : DrawDone\n");
 	GX_DrawDone();
+  printf("unloadFont : Flush\n");
 	GX_Flush();
-	
+
+  printf("unloadFont : free fontdata\n");
 	for( std::map<wchar_t, ftgxCharData>::iterator i = this->fontData.begin(); i != this->fontData.end(); i++) {
 		free(i->second.glyphDataTexture);
 	}
-	if(this->ftFace) {
-		FT_Done_Face(this->ftFace);
+
+  printf("ftFace tests\n");
+  printf("\tftFace ptr : %p\n", this->ftFace);
+  //printf("\tftFace is valid ? : %d\n", this->ftFace->size->metrics.x_ppem);
+
+	if(this->ftFace != NULL) {
+    printf("unloadFont FT_Done_Face\n");
+		//FT_Done_Face(this->ftFace);
+    printf("The face isnt discarded properly\n");
 	}
 
+  printf("unloadFont cacheClear\n");
 	this->cacheTextWidth.clear();
+  printf("unloadFont fontData clear\n");
 	this->fontData.clear();
 }
 

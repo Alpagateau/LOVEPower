@@ -101,6 +101,8 @@ namespace love {
 }
 
 int luaopen_love_filesystem(lua_State *L)  {
+
+    printf("<== MODULE LOVE FS ==>\n");
     sol::state_view luastate(L);
 
     luastate["love"]["filesystem"] = luastate.create_table_with(

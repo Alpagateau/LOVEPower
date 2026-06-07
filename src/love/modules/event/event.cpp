@@ -1,5 +1,6 @@
 #include <sol/sol.hpp>
 #include <vector>
+#include <queue>
 #include <tuple>
 #include <cstdlib>
 #include <grrlib.h>
@@ -15,11 +16,11 @@ extern "C" {
 
 namespace love {
     namespace event {
-        std::vector<event_t> events;
-        std::vector<event_t>::iterator currentEvent = events.end();
+        std::queue<event_t> events;
+        //std::queue<event_t>::iterator currentEvent = events.end();
 
-        static bool requestQuit = false;
-        static bool requestReset = false;
+        static volatile bool requestQuit = false;
+        static volatile bool requestReset = false;
 
         static void onReset(u32 reset, void* usrdata) {
             requestReset = true;
@@ -63,40 +64,59 @@ namespace love {
         }
 
         void pump(sol::this_state lua) {
-            currentEvent = events.begin();
+            //currentEvent = events.begin();
 
             if (requestQuit || requestReset) {
                 __pushEvent(lua, "quit");
-
-                if (requestReset) {
-                    SYS_ResetSystem(SYS_RETURNTOMENU, 0, 0);
-                    exit(0);
-                } else {
-                    SYS_ResetSystem(SYS_POWEROFF, 0, 0);
-                    exit(0);
-                }
+                requestQuit = false;
+                requestReset = false;
             }
+
+            //if (requestReset) {
+            //    SYS_ResetSystem(SYS_RETURNTOMENU, 0, 0);
+            //    exit(0);
+            //} else {
+            //    SYS_ResetSystem(SYS_POWEROFF, 0, 0);
+            //    exit(0);
+            //}
 
             if (checkLowMemory()) {
                 __pushEvent(lua, "lowmemory");
             }
         }
 
+        //event_t poll(sol::this_state lua) {
+        //    printf("[C++] Polling events\n");
+        //    if (currentEvent == events.end()) {
+        //        printf("[C++] Already at last event\n");
+        //        events.clear();
+        //        currentEvent = events.end();
+        //        return std::make_tuple(sol::lua_nil, sol::lua_nil, sol::lua_nil,
+        //                               sol::lua_nil, sol::lua_nil, sol::lua_nil, sol::lua_nil);
+        //    } else {
+        //        currentEvent++;
+        //        return *currentEvent;
+        //    }
+        //}
+
         event_t poll(sol::this_state lua) {
-            if (currentEvent == events.end()) {
-                events.clear();
-                currentEvent = events.end();
+            printf("[C++] Polling events\n");
+            if (events.empty()) {
+                //events.clear();
+                //currentEvent = events.end();
                 return std::make_tuple(sol::lua_nil, sol::lua_nil, sol::lua_nil,
                                        sol::lua_nil, sol::lua_nil, sol::lua_nil, sol::lua_nil);
             } else {
-                return *currentEvent++;
+                event_t e = events.front();
+                events.pop();
+                return e;
             }
         }
 
         void push(sol::object name, sol::object a, sol::object b,
                   sol::object c, sol::object d, sol::object e,
                   sol::object f, sol::this_state s) {
-            events.push_back(std::make_tuple(name, a, b, c, d, e, f));
+            events.push(std::make_tuple(name, a, b, c, d, e, f));
         }
 
         void quit(sol::this_state lua) {
@@ -109,6 +129,8 @@ namespace love {
 }
 
 int luaopen_love_event(lua_State *L) {
+
+    printf("<== MODULE LOVE EVENT ==>\n");
     sol::state_view luastate(L);
 
     luastate["love"]["event"] = luastate.create_table_with(

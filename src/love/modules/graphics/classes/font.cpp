@@ -1,4 +1,5 @@
 #include <sol/sol.hpp>
+#include <stdio.h>
 #include <FreeTypeGX/FreeTypeGX.h>
 #include <grrlib.h>
 
@@ -14,8 +15,11 @@ namespace love {
     namespace graphics {
 
         void Font::_createFont(const uint8_t* newFont, int dataSize, int size) {
+            printf("[FONT] Creating font\n");
             font = new FreeTypeGX();
+            printf("new FreeTypeGX object\n");
             font->loadFont(newFont, dataSize, size);
+            printf("[FONT] Font created");
         }
 
         Font::Font() {
@@ -36,12 +40,16 @@ namespace love {
         }
 
         Font::Font(std::string file, int size) {
+            printf("Loading font %s with size %d\n", file.c_str(), size);
             uint8_t* data = nullptr;
             int dataSize = GRRLIB_LoadFile(filesystem::getFilePath(file).c_str(), &data);
+            printf("Loading font, data_size = %d\n", dataSize);
             if (dataSize <= 0) {
                 throw std::runtime_error("Font file not found: " + filesystem::getFilePath(file));
             }
+            printf("Creating font\n");
             _createFont(data, dataSize, size);
+            printf("Font created");
         }
 
         int Font::getWidth(std::string text) {
