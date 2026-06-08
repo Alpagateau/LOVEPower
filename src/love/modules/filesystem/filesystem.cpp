@@ -1,9 +1,11 @@
+#include <dirent.h>
 #include <sol/sol.hpp>
 #include <string>
 #include <filesystem>
 #include <fstream>
 #include <chrono>
 #include <ctime>
+#include <sys/dirent.h>
 
 #include "filesystem.hpp"
 extern "C" {
@@ -97,6 +99,38 @@ namespace love {
         void preferSaveDirectory(const bool preferSave) {
             doesPreferSaveDirectory = preferSave;
         }
+
+        int getDirectoryItems(lua_State* L)
+        {
+          DIR* dir;
+          struct dirent* ent;
+
+          const char* path = lua_tostring(L, -1);
+          lua_pop(L, 1);
+          printf("Listing directory : %s\n", path);
+
+          printf("Create an empty table\n");
+          lua_newtable(L);
+          
+          int idx = 1;
+          if((dir = opendir(path)) != NULL)
+          {
+            while((ent = readdir(dir)) != NULL)
+            {
+              printf("> %s\n", ent->d_name);
+              lua_pushnumber(L, idx++);
+              lua_pushstring(L, ent->d_name);
+              lua_settable(L, -3);
+            }
+          }
+          else
+          {
+            printf("Couldn't open the directory\n");
+          }
+
+          return 1;
+        }
+        
     }
 }
 
@@ -109,6 +143,8 @@ int luaopen_love_filesystem(lua_State *L)  {
         "init", love::filesystem::init,
         "load", love::filesystem::load,
         "getInfo", love::filesystem::getInfo,
+        //"newFile", love::filesystem::newFile,
+        "getDirectoryItems", love::filesystem::getDirectoryItems,
         "exists", love::filesystem::exists,
         "preferSaveDirectory", love::filesystem::preferSaveDirectory
     );

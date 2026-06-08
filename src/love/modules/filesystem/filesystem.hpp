@@ -25,7 +25,7 @@ namespace love {
         bool                          exists(const std::string& file, sol::this_state lua);
         sol::protected_function       lines(const std::string& file, sol::this_state lua); // TODO
         int                           getSize(const std::string& file, sol::this_state lua); // IN BYTES!! TODO
-        sol::table                    getDirectoryItems(const std::string& dir, sol::this_state lua); // TODO
+        int                           getDirectoryItems(lua_State* L);
         std::optional<std::string>    read(const std::string& file, sol::this_state lua); // TODO
         std::pair<bool, std::string>  write(const std::string& file, const std::string& content, sol::this_state lua); // TODO
         std::pair<bool, std::string>  remove(const std::string& file, sol::this_state lua); // TODO
