@@ -87,7 +87,7 @@ struct LWPThread : public Thread {
         // Priority 64 is middle-of-the-road. 
         int res = LWP_CreateThread(&thread, thread_runner, this, stack, 128 * 1024, 64);
         if (res != 0) {
-            running = false;
+           running = false;
             return false;
         }
         return true;
@@ -107,7 +107,7 @@ struct LWPThread : public Thread {
 private:
     static void* thread_runner(void* data) {
         LWPThread* self = static_cast<LWPThread*>(data);
-        self->t->threadFunction();
+        self->->threadFunction();
         self->running = false; // Accurately mark as finished!
         return nullptr;
     }

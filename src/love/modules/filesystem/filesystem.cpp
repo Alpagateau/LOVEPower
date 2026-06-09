@@ -117,7 +117,7 @@ namespace love {
           {
             while((ent = readdir(dir)) != NULL)
             {
-              printf("> %s\n", ent->d_name);
+              //printf("> %s\n", ent->d_name);
               lua_pushnumber(L, idx++);
               lua_pushstring(L, ent->d_name);
               lua_settable(L, -3);

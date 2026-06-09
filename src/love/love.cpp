@@ -258,7 +258,8 @@ int initialize(int argc, char **argv) {
     // retval = 0;
     int done = 0;
 
-    lua_close(L);
+    //lua_close(L);
+    
     return done;
   } catch (const std::exception &e) {
     logError(std::string("Exception during initialization: ") + e.what());

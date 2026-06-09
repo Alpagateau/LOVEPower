@@ -514,7 +514,7 @@ namespace love {
         }
 
         void present() {
-            printf("[C++] presenting %s\n", draw_log.c_str());
+            printf("[C++] presenting [%s]\n", draw_log.c_str());
             draw_log.clear();
             GRRLIB_Render();
             printf("[C++] presented \n");

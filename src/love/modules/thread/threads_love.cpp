@@ -19,6 +19,7 @@
  **/
 
 #include "threads_love.h"
+#include "sdl/threads_sdl.h"
 
 #if defined(LOVE_LINUX)
 #include <signal.h>
@@ -87,24 +88,26 @@ void EmptyLock::setLock(Mutex &m)
 
 love::Type Threadable::type("Threadable", &Object::type);
 
-Threadable::Threadable()
+Threadable::Threadable(sdl1::LWPThread* _owner)
 {
-	owner = newThread(this);
+	//owner = newThread(this);
+  this->owner = _owner;
+  _owner->t = this;
 }
 
 Threadable::~Threadable()
 {
-	delete owner;
+	//delete owner;
 }
 
 bool Threadable::start()
 {
-	return owner->start();
+	//return owner->start();
 }
 
 void Threadable::wait()
 {
-	owner->wait();
+	//owner->wait();
 }
 
 bool Threadable::isRunning() const

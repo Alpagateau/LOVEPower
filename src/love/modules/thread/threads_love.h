@@ -24,6 +24,7 @@
 // LOVE
 #include "../../common/config.h"
 #include "Thread.h"
+#include "sdl/threads_sdl.h"
 
 // C++
 #include <string>
@@ -82,7 +83,7 @@ struct Threadable : public love::Object
 public:
 	static love::Type type;
 
-	Threadable();
+	Threadable(sdl1::LWPThread* t);
 	virtual ~Threadable();
 
 	virtual void threadFunction() = 0;
@@ -93,10 +94,8 @@ public:
 	const char *getThreadName() const;
 
 protected:
-
-	Thread *owner;
+  sdl1::LWPThread *owner;
 	std::string threadName;
-
 };
 
 struct MutexRef

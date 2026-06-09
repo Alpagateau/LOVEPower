@@ -32,15 +32,18 @@ namespace thread
 struct Thread
 {
 public:
-
 	virtual ~Thread() {}
 	virtual bool start() = 0;
 	virtual void wait() = 0;
 	virtual bool isRunning() = 0;
-
 }; // Thread
+
+struct Channel
+{
+};
 
 } // thread
 } // love
+
 
 #endif // LOVE_THREAD_THREAD_H

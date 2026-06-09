@@ -7,6 +7,8 @@ ifeq ($(strip $(DEVKITPPC)),)
 $(error "Please set DEVKITPPC in your environment. export DEVKITPPC=<path to>devkitPPC")
 endif
 
+USE_PHYSICS:=true
+
 include $(DEVKITPPC)/wii_rules
 
 #---------------------------------------------------------------------------------
@@ -51,7 +53,7 @@ SOURCES		:=	src \
 			src/lib/GRRLIB/grrlib
 
 DATA		:=	data 
-INCLUDES    :=  src/lib/ src/lib/pngu
+INCLUDES    :=  src/lib/ src/lib/pngu /opt/devkitpro/libogc/include/
 
 #---------------------------------------------------------------------------------
 # options for code generation
