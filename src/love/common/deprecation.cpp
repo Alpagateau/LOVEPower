@@ -20,7 +20,8 @@
 
 #include "config.h"
 #include "deprecation.h"
-#include "../modules/thread/threads_love.h"
+//#include "../modules/thread/threads_love.h"
+#include "../modules/thread/thread.h"
 
 #include <atomic>
 #include <map>
@@ -33,7 +34,7 @@ static std::vector<const DeprecationInfo *> *deprecatedList = nullptr;
 
 static std::atomic<int> initCount;
 
-static thread::Mutex *mutex = nullptr;
+static thread::mutex *mutex = nullptr;
 static bool outputEnabled = false;
 
 void initDeprecation()
@@ -57,7 +58,8 @@ void deinitDeprecation()
 	{
 		delete deprecated;
 		delete deprecatedList;
-		delete mutex;
+		//delete mutex;
+    free(mutex);
 
 		deprecated = nullptr;
 		deprecatedList = nullptr;
@@ -129,13 +131,13 @@ GetDeprecated::GetDeprecated()
 	: all(*deprecatedList)
 {
 	if (mutex != nullptr)
-		mutex->lock();
+		thread::lock(mutex);
 }
 
 GetDeprecated::~GetDeprecated()
 {
 	if (mutex != nullptr)
-		mutex->unlock();
+		thread::unlock(mutex);
 }
 
 MarkDeprecated::MarkDeprecated(const char *name, APIType api)
@@ -147,7 +149,7 @@ MarkDeprecated::MarkDeprecated(const char *name, APIType api, DeprecationType ty
 	: info(nullptr)
 {
 	if (mutex != nullptr)
-		mutex->lock();
+		thread::lock(mutex);
 
 	auto it = deprecated->find(name);
 
@@ -181,7 +183,7 @@ MarkDeprecated::~MarkDeprecated()
 		printDeprecationNotice(*info);
 
 	if (mutex != nullptr)
-		mutex->unlock();
+		thread::unlock(mutex);
 }
 
 } // love

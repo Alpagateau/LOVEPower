@@ -23,6 +23,7 @@ extern "C" {
 #include "modules/system/system.hpp"
 #include "modules/timer/timer.hpp"
 #include "modules/wiimote/wiimote.hpp"
+#include "modules/thread/thread_wrapper.h"
 
 #ifndef NO_LIBMII
 #include "modules/mii/miimodule.hpp"
@@ -108,6 +109,8 @@ int luaopen_love(lua_State *L) {
   lua_getglobal(L, "require");
   lua_pushstring(L, "love.jitsetup");
   lua_call(L, 1, 1);
+
+  luaopen_threads(L, modules);
 
   static const char *MAIN_THREAD_KEY = "_love_mainthread";
 
