@@ -33,7 +33,6 @@ function love.run()
                 local success, name, a, b, c, d, e, f = pcall(love.event.poll)
                 if not success then Info("<ERROR> "..name) end
                 if not name then break end
-                Info("event >"..name)
                 if name == "quit" then
                     if not love.quit or not love.quit() then
                         return a or 0

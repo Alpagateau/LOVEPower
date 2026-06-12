@@ -1,9 +1,9 @@
-#include <sol/sol.hpp>
-#include <stdio.h>
 #include <FreeTypeGX/FreeTypeGX.h>
-#include <grrlib.h>
-
+#include <sol/sol.hpp>
+#include <vector>
+#include <stdio.h>
 #include "../../../modules/filesystem/filesystem.hpp"
+#include <grrlib.h>
 
 #include "font.hpp"
 
@@ -12,54 +12,50 @@
 #define DEFAULT_FONT_SIZE 12
 
 namespace love {
-    namespace graphics {
+namespace graphics {
 
-        void Font::_createFont(const uint8_t* newFont, int dataSize, int size) {
-            printf("[FONT] Creating font\n");
-            font = new FreeTypeGX();
-            printf("new FreeTypeGX object\n");
-            font->loadFont(newFont, dataSize, size);
-            printf("[FONT] Font created");
-        }
 
-        Font::Font() {
-            _createFont(Vera_ttf, static_cast<int>(Vera_ttf_size), DEFAULT_FONT_SIZE);
-        }
-
-        Font::Font(int size) {
-            _createFont(Vera_ttf, static_cast<int>(Vera_ttf_size), size);
-        }
-
-        Font::Font(std::string file) {
-            uint8_t* data = nullptr;
-            int dataSize = GRRLIB_LoadFile(filesystem::getFilePath(file).c_str(), &data);
-            if (dataSize <= 0) {
-                throw std::runtime_error("Font file not found: " + filesystem::getFilePath(file));
-            }
-            _createFont(data, dataSize, DEFAULT_FONT_SIZE);
-        }
-
-        Font::Font(std::string file, int size) {
-            printf("Loading font %s with size %d\n", file.c_str(), size);
-            uint8_t* data = nullptr;
-            int dataSize = GRRLIB_LoadFile(filesystem::getFilePath(file).c_str(), &data);
-            printf("Loading font, data_size = %d\n", dataSize);
-            if (dataSize <= 0) {
-                throw std::runtime_error("Font file not found: " + filesystem::getFilePath(file));
-            }
-            printf("Creating font\n");
-            _createFont(data, dataSize, size);
-            printf("Font created");
-        }
-
-        int Font::getWidth(std::string text) {
-            std::vector<wchar_t> wide = utf8_to_wchar_vec(text);
-            return font->getWidth(wide.data());
-        }
-
-        int Font::getHeight() {
-            std::vector<wchar_t> wide = utf8_to_wchar_vec("");
-            return font->getHeight(wide.data());
-        }
-    }
+void Font::_createFont(const uint8_t *newFont, int dataSize, int size) {
+  font = new FreeTypeGX();
+  font->loadFont(newFont, dataSize, size);
 }
+
+Font::Font() {
+  _createFont(Vera_ttf, static_cast<int>(Vera_ttf_size), DEFAULT_FONT_SIZE);
+}
+
+Font::Font(int size) {
+  _createFont(Vera_ttf, static_cast<int>(Vera_ttf_size), size);
+}
+
+Font::Font(std::string file) {
+  uint8_t *data = nullptr;
+  int dataSize = GRRLIB_LoadFile(filesystem::getFilePath(file).c_str(), &data);
+  if (dataSize <= 0) {
+    throw std::runtime_error("Font file not found: " +
+                             filesystem::getFilePath(file));
+  }
+  _createFont(data, dataSize, DEFAULT_FONT_SIZE);
+}
+
+Font::Font(std::string file, int size) {
+  uint8_t *data = nullptr;
+  int dataSize = GRRLIB_LoadFile(filesystem::getFilePath(file).c_str(), &data);
+  if (dataSize <= 0) {
+    throw std::runtime_error("Font file not found: " +
+                             filesystem::getFilePath(file));
+  }
+  _createFont(data, dataSize, size);
+}
+
+int Font::getWidth(std::string text) {
+  std::vector<wchar_t> wide = utf8_to_wchar_vec(text);
+  return font->getWidth(wide.data());
+}
+
+int Font::getHeight() {
+  std::vector<wchar_t> wide = utf8_to_wchar_vec("");
+  return font->getHeight(wide.data());
+}
+} // namespace graphics
+} // namespace love

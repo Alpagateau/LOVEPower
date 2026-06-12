@@ -22,6 +22,7 @@
 #include "../../common/math.h"
 
 #define NAN_GUARD(x) if(std::isnan( (x) )) return;
+#define OPT(a, d) (a) ? (a).value() : (d)
 
 extern "C" {
     #include <lua.h>
@@ -101,12 +102,8 @@ namespace love {
             color = (r_int << 24) | (g_int << 16) | (b_int << 8) | a_int;
         }
 
-        void setColor_float4(float r, float g, float b, float a) {
-            _setColor(r, g, b, a);
-        }
-
-        void setColor_float3(float r, float g, float b) {
-            _setColor(r, g, b, 1.0f);
+        void setColor_float4(float r, float g, float b, sol::optional<float> a) {
+            _setColor(r, g, b, a ? a.value() : 1.0f);
         }
 
         void _setBackgroundColor(float r, float g, float b, float a) {
@@ -117,12 +114,8 @@ namespace love {
             backgroundColor = (r_int << 24) | (g_int << 16) | (b_int << 8) | a_int;
         }
 
-        void setBackgroundColor_float4(float r, float g, float b, float a) {
-            _setBackgroundColor(r, g, b, a);
-        }
-
-        void setBackgroundColor_float3(float r, float g, float b) {
-            _setBackgroundColor(r, g, b, 1.0f);
+        void setBackgroundColor_float4(float r, float g, float b, sol::optional<float> a) {
+            _setBackgroundColor(r, g, b, a ? a.value() : 1.0f);
         }
 
         std::tuple<float, float, float, float> getBackgroundColor() {
@@ -326,61 +319,39 @@ namespace love {
             );
         }
 
-        void draw(love::graphics::Texture &texture) {
-            _draw(texture, 0, 0, 0, 1, 1, 0, 0);
-        }
-        void draw_x(love::graphics::Texture &texture, float x) {
-            _draw(texture, x, 0, 0, 1, 1, 0, 0);
-        }
-        void draw_x_y(love::graphics::Texture &texture, float x, float y) {
-
-            _draw(texture, x, y, 0, 1, 1, 0, 0);
-        }
-        void draw_x_y_r(love::graphics::Texture &texture, float x, float y, float rotation) {
-            _draw(texture, x, y, rotation, 1, 1, 0, 0);
-        }
-        void draw_x_y_r_sx(love::graphics::Texture &texture, float x, float y, float rotation, float sx) {
-            _draw(texture, x, y, rotation, sx, 1, 0, 0);
-        }
-        void draw_x_y_r_sx_sy(love::graphics::Texture &texture, float x, float y, float rotation, float sx, float sy) {
-            _draw(texture, x, y, rotation, sx, sy, 0, 0);
-        }
-        void draw_x_y_r_sx_sy_ox(love::graphics::Texture &texture, float x, float y, float rotation, float sx, float sy, float ox) {
-            _draw(texture, x, y, rotation, sx, sy, ox, 0);
-        }
-        void draw_x_y_r_sx_sy_ox_oy(love::graphics::Texture &texture, float x, float y, float rotation, float sx, float sy, float ox, float oy) {
-            _draw(texture, x, y, rotation, sx, sy, ox, oy);
+        void draw_x_y_r_sx_sy_ox_oy(
+            love::graphics::Texture &texture, 
+            sol::optional<float> x, sol::optional<float> y, 
+            sol::optional<float> rotation, 
+            sol::optional<float> sx, sol::optional<float> sy, 
+            sol::optional<float> ox, sol::optional<float> oy) {
+            _draw(
+                texture, 
+                OPT(x, 0), 
+                OPT(y, 0), 
+                OPT(rotation, 0), 
+                OPT(sx, 1), 
+                OPT(sy, OPT(sx, 1)), 
+                OPT(ox, 0), 
+                OPT(oy, 0));
         }
 
-        void draw_quad(love::graphics::Texture &texture, love::graphics::Quad &quad) {
-            _draw_quad(texture, quad, 0, 0, 0, 1, 1, 0, 0);
-        }
-        void draw_quad_x(love::graphics::Texture &texture, love::graphics::Quad &quad, float x) {
-            _draw_quad(texture, quad, x, 0, 0, 1, 1, 0, 0);
-        }
-
-        void draw_quad_x_y(love::graphics::Texture &texture, love::graphics::Quad &quad, float x, float y) {
-            _draw_quad(texture, quad, x, y, 0, 1, 1, 0, 0);
-        }
-
-        void draw_quad_x_y_r(love::graphics::Texture &texture, love::graphics::Quad &quad, float x, float y, float rotation) {
-            _draw_quad(texture, quad, x, y, rotation, 1, 1, 0, 0);
-        }
-
-        void draw_quad_x_y_r_sx(love::graphics::Texture &texture, love::graphics::Quad &quad, float x, float y, float rotation, float sx) {
-            _draw_quad(texture, quad, x, y, rotation, sx, 1, 0, 0);
-        }
-
-        void draw_quad_x_y_r_sx_sy(love::graphics::Texture &texture, love::graphics::Quad &quad, float x, float y, float rotation, float sx, float sy) {
-            _draw_quad(texture, quad, x, y, rotation, sx, sy, 0, 0);
-        }
-
-        void draw_quad_x_y_r_sx_sy_ox(love::graphics::Texture &texture, love::graphics::Quad &quad, float x, float y, float rotation, float sx, float sy, float ox) {
-            _draw_quad(texture, quad, x, y, rotation, sx, sy, ox, 0);
-        }
-
-        void draw_quad_x_y_r_sx_sy_ox_oy(love::graphics::Texture &texture, love::graphics::Quad &quad, float x, float y, float rotation, float sx, float sy, float ox, float oy) {
-            _draw_quad(texture, quad, x, y, rotation, sx, sy, ox, oy);
+        void draw_quad_x_y_r_sx_sy_ox_oy(
+            love::graphics::Texture &texture, 
+            love::graphics::Quad &quad, 
+            sol::optional<float> x, sol::optional<float> y, 
+            sol::optional<float> rotation, 
+            sol::optional<float> sx, sol::optional<float> sy, 
+            sol::optional<float> ox, sol::optional<float> oy) {
+            _draw_quad(
+                texture, quad, 
+                OPT(x, 0), 
+                OPT(y, 0), 
+                OPT(rotation, 0), 
+                OPT(sx, 1), 
+                OPT(sy, OPT(sx, 1)), 
+                OPT(ox, 0),
+                OPT(oy, 0));
         }
 
         love::graphics::Texture newImage(std::string file) {
@@ -514,10 +485,8 @@ namespace love {
         }
 
         void present() {
-            printf("[C++] presenting [%s]\n", draw_log.c_str());
             draw_log.clear();
             GRRLIB_Render();
-            printf("[C++] presented \n");
         }
 
         void push() {
@@ -585,10 +554,7 @@ int luaopen_love_graphics(lua_State *L) {
     sol::state_view luastate(L);
 
     luastate["love"]["graphics"] = luastate.create_table_with(
-        "setColor", sol::overload(
-            love::graphics::setColor_float4,
-            love::graphics::setColor_float3
-        ),
+        "setColor", love::graphics::setColor_float4,
         "getColor", love::graphics::getColor,
         "rectangle", love::graphics::rectangle,
         "polygon", sol::overload(
@@ -601,22 +567,7 @@ int luaopen_love_graphics(lua_State *L) {
             love::graphics::line_verts
         ),
         "draw", sol::overload(
-            love::graphics::draw,
-            love::graphics::draw_x,
-            love::graphics::draw_x_y,
-            love::graphics::draw_x_y_r,
-            love::graphics::draw_x_y_r_sx,
-            love::graphics::draw_x_y_r_sx_sy,
-            love::graphics::draw_x_y_r_sx_sy_ox,
             love::graphics::draw_x_y_r_sx_sy_ox_oy,
-
-            love::graphics::draw_quad,
-            love::graphics::draw_quad_x,
-            love::graphics::draw_quad_x_y,
-            love::graphics::draw_quad_x_y_r,
-            love::graphics::draw_quad_x_y_r_sx,
-            love::graphics::draw_quad_x_y_r_sx_sy,
-            love::graphics::draw_quad_x_y_r_sx_sy_ox,
             love::graphics::draw_quad_x_y_r_sx_sy_ox_oy
         ),
         "setFont", love::graphics::setFont,
@@ -648,10 +599,7 @@ int luaopen_love_graphics(lua_State *L) {
             love::graphics::newImage_empty
         ),
         "newQuad", love::graphics::newQuad,
-        "setBackgroundColor", sol::overload(
-            love::graphics::setBackgroundColor_float4,
-            love::graphics::setBackgroundColor_float3
-        ),
+        "setBackgroundColor", love::graphics::setBackgroundColor_float4,
         "getBackgroundColor", love::graphics::getBackgroundColor,
         "clear", sol::overload(
             love::graphics::clear_float4,

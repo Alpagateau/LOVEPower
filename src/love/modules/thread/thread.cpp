@@ -1,6 +1,9 @@
 #include "thread.h"
 #include "SDL/SDL_mutex.h"
 #include "SDL/SDL_thread.h"
+#include "sol/compatibility/compat-5.3.h"
+#include "thread_wrapper.h"
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <ogc/system.h>
@@ -10,56 +13,110 @@ extern "C" {
   #include <lua.h>
   #include <lualib.h>
   #include <lauxlib.h>
+  #include <stdlib.h>
 }
 
 namespace love{
 namespace thread{
 
+char* buffer_file(const char* path)
+{
+  char* text_buffer = NULL;
+  FILE* source = fopen(path, "r");
+  if(source == NULL)
+    printf("Couldnt open the file\n");
+  fseek(source, 0, SEEK_END);
+  long size = ftell(source) + 1;
+  fseek(source, 0, SEEK_SET);
+  text_buffer = (char*)malloc(size);
+  int idx = 0;
+  int c = 0;
+  while((c = fgetc(source)) != EOF) {
+    text_buffer[idx++] = c;
+  }
+  text_buffer[idx] = 0;
+  printf("Done buffering the file [%zu bytes]\n", strlen(text_buffer));
+  fclose(source);
+  return text_buffer;
+}
+
 love_thread_t newThread(const char* b, bool is_path)
 {
+  static const char* game_folder = "game/";
   love_thread_t t = {};
-  t.buffer  = b;
-  t.is_path = is_path;
+
+  if(is_path){
+    char* full_path = (char*)malloc(strlen(b) + strlen(game_folder) + 1);
+    sprintf(full_path, "%s%s", game_folder, b);
+    t.buffer  = buffer_file(full_path);
+    free(full_path);
+  }
+  else
+  {
+    t.buffer = strdup(b);
+  }
   t.running = false;
   t.error = NULL;
   return t;
 }
 
 extern "C" int luaopen_threads(lua_State *L, const luaL_reg* master_modules);
+extern "C" int lua_safeprint(lua_State *L);
 
 int runner(void* data)
 {
   SYS_STDIO_Report(true);
-  printf("[LOVE THREAD] RUNNER\n");
   love_thread_data_t* d = (love_thread_data_t*)data;
   d->thread->L = luaL_newstate();
-  luaL_openlibs(d->thread->L); 
-  luaopen_threads(d->thread->L, d->modules);
-  printf("opening libs\n");
-  //luaL_openlib(d->thread->L,NULL, d->modules, 0);
-  d->thread->running = true;
+  luaL_openlibs(d->thread->L);
+  lua_register(d->thread->L, "s_print", lua_safeprint);
+  int idx = 0;
+  while(d->modules[idx].name != NULL)
+  {
+    //luaL_requiref(d->thread->L, d->modules[idx].name, d->modules[idx].func, 1);
+    
+    lua_getglobal(d->thread->L, "package");
+    lua_getfield(d->thread->L , -1, "preload");
+    lua_pushcfunction(d->thread->L , d->modules[idx].func);
+    lua_setfield(d->thread->L, -2, d->modules[idx].name);
+    lua_pop(d->thread->L, 2);
+    idx++;
+  }
 
+  luaopen_threads(d->thread->L, d->modules); 
+
+  lua_getglobal(d->thread->L, "debug");
+  lua_getfield(d->thread->L, -1, "traceback");
+  lua_remove(d->thread->L, -2); // Remove the 'debug' table, leaving just 'traceback'
+
+  int msg_handler_idx = lua_gettop(d->thread->L);
+
+  d->thread->running = true;
   int status = 0;
 
-  printf("<= running the code =>\n");
-  if(d->thread->is_path)
-    status = luaL_dofile(d->thread->L, d->thread->buffer);
+  printf("[THREADS] starting the programe (%p)\n", d);
+  if(luaL_loadbuffer(d->thread->L, d->thread->buffer, strlen(d->thread->buffer), "threadcode") != 0)
+  {
+    printf("syntax error : %s\n", lua_tostring(d->thread->L, -1));
+    lua_pop(d->thread->L, 1);
+  }
   else
-    status = luaL_dostring(d->thread->L, d->thread->buffer);
+    status = lua_pcall(d->thread->L, 0, LUA_MULTRET, msg_handler_idx);
+  printf("[THREADS] thread is done (%p)\n", d);
 
-  printf("Error ?\n");
   if(status != 0) 
   {
     const char* err_msg = lua_tostring(d->thread->L, -1);
     if(err_msg != NULL)
     {
       d->thread->error = strdup(err_msg);
+      printf("[THREADS] (%p) error : %s\n", d, err_msg);
     }
   }
 
-  printf("Closing\n");
   d->thread->running = false;
   lua_close(d->thread->L);
+  free(d->thread->buffer);
   free(d);
   return 0;
 }
@@ -72,7 +129,6 @@ void runThread(love_thread_t* thread, const luaL_reg* modules)
     free(thread->error);
     thread->error = NULL;
   }
-  printf("running the thread\n");
   love_thread_data_t* data = (love_thread_data_t*)malloc(sizeof(*data));
   data->thread = thread;
   data->modules = modules;
@@ -114,13 +170,9 @@ void free_variant(variant_t* v)
 
 love_channel_t* channel_new()
 {
-  printf("Creating the channel\n");
   love_channel_t* ch = new love_channel_t;
-  printf("Creating mutex\n");
   ch->m    = SDL_CreateMutex(); 
-  printf("Creating cond\n");
   ch->cond = SDL_CreateCond();
-  printf("Creating queue\n");
   ch->messages = std::queue<variant_t>();
   return ch;
 }

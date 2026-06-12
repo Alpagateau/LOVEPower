@@ -1,3 +1,4 @@
+#include <filesystem>
 #include <string>
 #include <tuple>
 
@@ -246,6 +247,13 @@ int initialize(int argc, char **argv) {
 #ifdef USE_LIBMII
     love::mii::__init(luastate);
 #endif
+
+
+    //currently force path
+    std::filesystem::current_path(
+        std::filesystem::path("sd://LOVEPower/game/")
+    );
+
 
     luastate["arg"] = luastate.create_table();
     for (int i = 0; i < argc; i++) {

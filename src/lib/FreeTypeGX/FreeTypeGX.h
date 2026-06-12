@@ -223,7 +223,7 @@ class FreeTypeGX {
 		FT_Short ftDescender;		/**< Descender value of the rendered font. */
 
 		bool ftKerningEnabled;		/**< Flag indicating the availability of font kerning data. */
-		FT_Face ftFace;				/**< Reusable FreeType FT_Face object. */
+		FT_Face ftFace = NULL;				/**< Reusable FreeType FT_Face object. */
 		
 		uint8_t textureFormat;		/**< Defined texture format of the target EFB. */
 		uint8_t vertexIndex;		/**< Vertex format descriptor index. */

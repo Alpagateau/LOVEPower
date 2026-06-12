@@ -42,7 +42,6 @@ bool updateMode_no_settings(int width, int height) { return true; }
 
 //std::tuple<int, int, sol::table> getMode() {
 int getMode(lua_State* L){
-  printf("Getting the mode\n");
   // sol::state_view lua = sol::state_view(luaL_newstate());
   // sol::state_view lua = sol::state_view(LState);
   //settings = lua.create_table_with(
@@ -93,7 +92,6 @@ int getMode(lua_State* L){
   lua_pushnumber(L, 480);
   lua_settable(L, -3);
 
-  //printf("table to sol\n");
   sol::table settings = sol::table(L, -1);
   //return std::make_tuple(600, 480, settings);
   return 3;

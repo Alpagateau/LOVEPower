@@ -11,6 +11,9 @@ extern "C" {
 
 using namespace love::thread;
 
+//helpers
+extern "C" int lua_safeprint(lua_State* L);
+
 //variants
 variant_t* to_variant(lua_State* L, int idx);
 int lua_pushvariant(lua_State* L, variant_t* v);
@@ -53,6 +56,9 @@ static const luaL_reg channel_methods[] = {
 };
 
 static const luaL_reg thread_functions[] = {
+    //helpers
+    {"sprint", lua_safeprint},
+    //thread
     {"newThread", love_thread_newThread},
     //Channels
     {"newChannel", love_thread_newChannel},

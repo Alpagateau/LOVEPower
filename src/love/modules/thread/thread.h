@@ -2,7 +2,7 @@
 #define THREAD_H
 
 #include <queue>
-#include <string>
+
 extern "C" {
   #include "SDL/SDL_mutex.h"
   #include "SDL/SDL_thread.h"
@@ -36,8 +36,8 @@ typedef struct {
 
 typedef struct{
   SDL_Thread* handle;
-  const char* buffer; //Either code or filename
-  bool is_path; //true if buffer is filename
+  char* buffer; //code
+  //bool is_path; //true if buffer is filename
   volatile bool running; 
   char* error;
   lua_State* L;

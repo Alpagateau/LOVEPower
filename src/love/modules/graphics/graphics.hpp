@@ -8,6 +8,7 @@
 #include "classes/font.hpp"
 #include "classes/quad.hpp"
 #include "classes/texture.hpp"
+#include "sol/optional_implementation.hpp"
 
 extern "C" {
 #include <lua.h>
@@ -22,11 +23,9 @@ void __registerTypes(sol::state &luastate);
 
 #pragma region Color
 void _setColor(float r, float g, float b, float a);
-void setColor_float4(float r, float g, float b, float a);
-void setColor_float3(float r, float g, float b);
+void setColor_float4(float r, float g, float b, sol::optional<float> a);
 void _setBackgroundColor(float r, float g, float b, float a);
-void setBackgroundColor_float4(float r, float g, float b, float a);
-void setBackgroundColor_float3(float r, float g, float b);
+void setBackgroundColor_float4(float r, float g, float b, sol::optional<float> a);
 
 std::tuple<float, float, float, float> getColor();
 std::tuple<float, float, float, float> getBackgroundColor();
@@ -50,42 +49,20 @@ void _draw_quad(love::graphics::Texture &texture, love::graphics::Quad &quad,
                 float x, float y, float rotation, float sx, float sy, float ox,
                 float oy);
 
-void draw(love::graphics::Texture &texture);
-void draw_x(love::graphics::Texture &texture, float x);
-void draw_x_y(love::graphics::Texture &texture, float x, float y);
-void draw_x_y_r(love::graphics::Texture &texture, float x, float y,
-                float rotation);
-void draw_x_y_r_sx(love::graphics::Texture &texture, float x, float y,
-                   float rotation, float sx);
-void draw_x_y_r_sx_sy(love::graphics::Texture &texture, float x, float y,
-                      float rotation, float sx, float sy);
-void draw_x_y_r_sx_sy_ox(love::graphics::Texture &texture, float x, float y,
-                         float rotation, float sx, float sy, float ox);
-void draw_x_y_r_sx_sy_ox_oy(love::graphics::Texture &texture, float x, float y,
-                            float rotation, float sx, float sy, float ox,
-                            float oy);
+void draw_x_y_r_sx_sy_ox_oy(
+    love::graphics::Texture &texture, 
+    sol::optional<float> x, sol::optional<float> y,
+    sol::optional<float> rotation, sol::optional<float> sx, 
+    sol::optional<float> sy, sol::optional<float> ox,
+    sol::optional<float> oy);
 
-void draw_quad(love::graphics::Texture &texture, love::graphics::Quad &quad);
-void draw_quad_x(love::graphics::Texture &texture, love::graphics::Quad &quad,
-                 float x);
-void draw_quad_x_y(love::graphics::Texture &texture, love::graphics::Quad &quad,
-                   float x, float y);
-void draw_quad_x_y_r(love::graphics::Texture &texture,
-                     love::graphics::Quad &quad, float x, float y,
-                     float rotation);
-void draw_quad_x_y_r_sx(love::graphics::Texture &texture,
-                        love::graphics::Quad &quad, float x, float y,
-                        float rotation, float sx);
-void draw_quad_x_y_r_sx_sy(love::graphics::Texture &texture,
-                           love::graphics::Quad &quad, float x, float y,
-                           float rotation, float sx, float sy);
-void draw_quad_x_y_r_sx_sy_ox(love::graphics::Texture &texture,
-                              love::graphics::Quad &quad, float x, float y,
-                              float rotation, float sx, float sy, float ox);
-void draw_quad_x_y_r_sx_sy_ox_oy(love::graphics::Texture &texture,
-                                 love::graphics::Quad &quad, float x, float y,
-                                 float rotation, float sx, float sy, float ox,
-                                 float oy);
+void draw_quad_x_y_r_sx_sy_ox_oy(
+    love::graphics::Texture &texture,
+    love::graphics::Quad &quad, 
+    sol::optional<float> x, sol::optional<float> y,
+    sol::optional<float> rotation, 
+    sol::optional<float> sx, sol::optional<float> sy, 
+    sol::optional<float> ox, sol::optional<float> oy);
 
 love::graphics::Texture newImage(std::string file);
 love::graphics::Texture newImage_data(love::data::Data data);

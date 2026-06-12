@@ -2,6 +2,7 @@
 #include "thread_wrapper.h"
 #include "SDL/SDL_mutex.h"
 #include <map>
+#include <string>
 extern "C" {
   #include <lauxlib.h>
   #include <lua.h>
@@ -13,6 +14,16 @@ static const luaL_reg *global_modules_list = NULL;
 
 love::thread::mutex* global_mutex;
 std::map<std::string, love_channel_t*> global_channels;
+
+int lua_safeprint(lua_State* L)
+{
+  lock(global_mutex);
+  const char* str = lua_tostring(L, 1);
+  printf("%s\n", str);
+  fflush(stdout);
+  unlock(global_mutex);
+  return 0;
+}
 
 variant_t* to_variant(lua_State* L, int idx)
 {
@@ -72,7 +83,7 @@ int love_thread_newThread(lua_State *L) {
     is_path = false;
 
   love_thread_t *t = (love_thread_t *)malloc(sizeof(love_thread_t));
-  *t = love::thread::newThread(strdup(arg), is_path);
+  *t = love::thread::newThread(arg, is_path);
 
   love_thread_t **udata =
       (love_thread_t **)lua_newuserdata(L, sizeof(love_thread_t *));
@@ -87,10 +98,6 @@ int love_thread_newThread(lua_State *L) {
 love_thread_t *to_thread(lua_State *L, int idx) {
   love_thread_t **t_ptr =
       (love_thread_t **)luaL_checkudata(L, idx, LUA_THREAD_META);
-  if(*t_ptr == NULL)
-  {
-    printf("[LOVE THREAD] : Null valued thread\n");
-  }
   return *t_ptr;
 }
 
@@ -181,25 +188,17 @@ int love_thread_newChannel(lua_State* L)
 
 int love_thread_getChannel(lua_State* L)
 {
-  printf("[LOVE THREADS] getChannel\n");
   love_channel_t* c = NULL;
   std::string name = lua_tostring(L, -1);
-  printf("[LOVE THREADS] lock\n");
   lock(global_mutex);
-  printf("[LOVE THREADS] get the name\n");
   if(auto ch = global_channels.find(name); ch != global_channels.end()){
-    printf("[LOVE THREADS] name found\n");
     c = ch->second;
   }
   else {
-    printf("[LOVE THREADS] name not found, creating one (%s)\n", name.c_str());
     c = channel_new();
-    printf("[LOVE THREADS] registering %s\n", name.c_str());
     global_channels[name] = c;
   }
-  printf("[LOVE THREADS] unlock\n");
   unlock(global_mutex);
-  printf("[LOVE THREAD] creating and push udata\n");
   love_channel_t** udata =  (love_channel_t**)lua_newuserdata(L, sizeof(love_channel_t*));
   *udata = c;
   luaL_getmetatable(L, LUA_CHANNEL_META);
@@ -211,10 +210,6 @@ love_channel_t* to_channel(lua_State* L, int idx)
 {
   love_channel_t **ch_ptr =
       (love_channel_t **)luaL_checkudata(L, idx, LUA_CHANNEL_META);
-  if(*ch_ptr == NULL)
-  {
-    printf("[LOVE THREAD] : Null valued channel\n");
-  }
   return *ch_ptr;
 }
 
@@ -223,6 +218,7 @@ int channel_lua_push(lua_State* L)
   love_channel_t* ch = to_channel(L, 1);
   variant_t* v = to_variant(L, 2);
   channel_push(ch, v);
+  free(v);
   return 0;
 }
 

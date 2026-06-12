@@ -85,22 +85,7 @@ namespace love {
             }
         }
 
-        //event_t poll(sol::this_state lua) {
-        //    printf("[C++] Polling events\n");
-        //    if (currentEvent == events.end()) {
-        //        printf("[C++] Already at last event\n");
-        //        events.clear();
-        //        currentEvent = events.end();
-        //        return std::make_tuple(sol::lua_nil, sol::lua_nil, sol::lua_nil,
-        //                               sol::lua_nil, sol::lua_nil, sol::lua_nil, sol::lua_nil);
-        //    } else {
-        //        currentEvent++;
-        //        return *currentEvent;
-        //    }
-        //}
-
         event_t poll(sol::this_state lua) {
-            printf("[C++] Polling events\n");
             if (events.empty()) {
                 //events.clear();
                 //currentEvent = events.end();
