@@ -66,6 +66,7 @@ static const luaL_reg thread_functions[] = {
     {NULL, NULL}
 };
 
-extern "C" int luaopen_threads(lua_State *L,const luaL_reg* master_modules);
+int set_global_modules(const luaL_reg* modules);
+extern "C" int luaopen_threads(lua_State *L);
 
 #endif

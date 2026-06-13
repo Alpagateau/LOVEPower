@@ -42,10 +42,12 @@ char* buffer_file(const char* path)
 
 love_thread_t newThread(const char* b, bool is_path)
 {
+  printf("[C++] new thread\n");
   static const char* game_folder = "game/";
   love_thread_t t = {};
 
   if(is_path){
+    printf("[C++] buffering file\n");
     char* full_path = (char*)malloc(strlen(b) + strlen(game_folder) + 1);
     sprintf(full_path, "%s%s", game_folder, b);
     t.buffer  = buffer_file(full_path);
@@ -53,6 +55,7 @@ love_thread_t newThread(const char* b, bool is_path)
   }
   else
   {
+    printf("[C++] already code\n");
     t.buffer = strdup(b);
   }
   t.running = false;
@@ -60,53 +63,61 @@ love_thread_t newThread(const char* b, bool is_path)
   return t;
 }
 
-extern "C" int luaopen_threads(lua_State *L, const luaL_reg* master_modules);
+extern "C" int luaopen_threads(lua_State *L);
 extern "C" int lua_safeprint(lua_State *L);
 
 int runner(void* data)
 {
   SYS_STDIO_Report(true);
   love_thread_data_t* d = (love_thread_data_t*)data;
-  d->thread->L = luaL_newstate();
-  luaL_openlibs(d->thread->L);
-  lua_register(d->thread->L, "s_print", lua_safeprint);
+  lua_State* L = luaL_newstate();
+  luaL_openlibs(L);
+  lua_register(L, "s_print", lua_safeprint);
   int idx = 0;
   while(d->modules[idx].name != NULL)
   {
-    //luaL_requiref(d->thread->L, d->modules[idx].name, d->modules[idx].func, 1);
-    
-    lua_getglobal(d->thread->L, "package");
-    lua_getfield(d->thread->L , -1, "preload");
-    lua_pushcfunction(d->thread->L , d->modules[idx].func);
-    lua_setfield(d->thread->L, -2, d->modules[idx].name);
-    lua_pop(d->thread->L, 2);
+    //luaL_requiref(L, d->modules[idx].name, d->modules[idx].func, 1);
+    printf("preloading module : %s\n", d->modules[idx].name);
+    lua_getglobal(L, "package");
+    lua_getfield(L , -1, "preload");
+    lua_pushcfunction(L , d->modules[idx].func);
+    lua_setfield(L, -2, d->modules[idx].name);
+    lua_pop(L, 2);
     idx++;
   }
 
-  luaopen_threads(d->thread->L, d->modules); 
+  lua_getglobal(L, "debug");
+  lua_getfield(L, -1, "traceback");
+  lua_remove(L, -2); // Remove the 'debug' table, leaving just 'traceback'
 
-  lua_getglobal(d->thread->L, "debug");
-  lua_getfield(d->thread->L, -1, "traceback");
-  lua_remove(d->thread->L, -2); // Remove the 'debug' table, leaving just 'traceback'
+  lua_getglobal(L, "require");
+  lua_pushstring(L, "love");
+  lua_call(L, 1, 1);
+  lua_pop(L, 1);
 
-  int msg_handler_idx = lua_gettop(d->thread->L);
+  lua_getglobal(L, "require");
+  lua_pushstring(L, "love.thread");
+  lua_call(L, 1, 1);
+  lua_pop(L, 1);
+
+  int msg_handler_idx = lua_gettop(L);
 
   d->thread->running = true;
   int status = 0;
 
   printf("[THREADS] starting the programe (%p)\n", d);
-  if(luaL_loadbuffer(d->thread->L, d->thread->buffer, strlen(d->thread->buffer), "threadcode") != 0)
+  if(luaL_loadbuffer(L, d->thread->buffer, strlen(d->thread->buffer), "threadcode") != 0)
   {
-    printf("syntax error : %s\n", lua_tostring(d->thread->L, -1));
-    lua_pop(d->thread->L, 1);
+    printf("syntax error : %s\n", lua_tostring(L, -1));
+    lua_pop(L, 1);
   }
   else
-    status = lua_pcall(d->thread->L, 0, LUA_MULTRET, msg_handler_idx);
+    status = lua_pcall(L, 0, LUA_MULTRET, msg_handler_idx);
   printf("[THREADS] thread is done (%p)\n", d);
 
   if(status != 0) 
   {
-    const char* err_msg = lua_tostring(d->thread->L, -1);
+    const char* err_msg = lua_tostring(L, -1);
     if(err_msg != NULL)
     {
       d->thread->error = strdup(err_msg);
@@ -115,7 +126,7 @@ int runner(void* data)
   }
 
   d->thread->running = false;
-  lua_close(d->thread->L);
+  lua_close(L);
   free(d->thread->buffer);
   free(d);
   return 0;

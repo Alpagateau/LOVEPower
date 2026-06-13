@@ -1,6 +1,7 @@
 
 #include "thread_wrapper.h"
 #include "SDL/SDL_mutex.h"
+#include "sol/state_view.hpp"
 #include <map>
 #include <string>
 extern "C" {
@@ -140,8 +141,15 @@ int thread_gc(lua_State *L) {
   return 0;
 }
 
-extern "C" int luaopen_threads(lua_State *L, const luaL_reg* master_modules) {
-  global_modules_list = master_modules;
+int set_global_modules(const luaL_reg* modules)
+{
+  if(global_modules_list == NULL)
+    global_modules_list = modules;
+
+  return 0;
+}
+
+extern "C" int luaopen_threads(lua_State *L) {
   if (global_mutex == NULL)
   {
     global_mutex = SDL_CreateMutex();
@@ -158,21 +166,29 @@ extern "C" int luaopen_threads(lua_State *L, const luaL_reg* master_modules) {
   lua_setfield(L, -2, "__index");
   luaL_register(L, NULL, channel_methods);
   lua_pop(L, 1);
-  // 3. Create the global "love" table if it doesn't exist, and nested "thread"
-  // table
-  lua_getglobal(L, "love");
-  if (lua_isnil(L, -1)) {
-    lua_pop(L, 1);
-    lua_newtable(L);
-    lua_setglobal(L, "love");
-    lua_getglobal(L, "love");
-  }
 
-  lua_newtable(L);
-  luaL_register(L, NULL, thread_functions);
-  lua_setfield(L, -2, "thread"); // love.thread = module table
+  sol::state_view ls(L);
+
+  ls["love"]["thread"] = ls.create_table_with(
+        "sprint", lua_safeprint,
+        "newThread", love_thread_newThread,
+        "newChannel", love_thread_newChannel,
+        "getChannel", love_thread_getChannel
+      );
+
+  //lua_getglobal(L, "love");
+  //if (lua_isnil(L, -1)) {
+  //  lua_pop(L, 1);
+  //  lua_newtable(L);
+  //  lua_setglobal(L, "love");
+  //  lua_getglobal(L, "love");
+  //}
+
+  //lua_newtable(L);
+  //luaL_register(L, NULL, thread_functions);
+  //lua_setfield(L, -2, "thread"); // love.thread = module table
  
-  lua_pop(L, 1); // Pop love table
+  //lua_pop(L, 1); // Pop love table
   return 1;
 }
 

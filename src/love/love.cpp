@@ -72,6 +72,7 @@ static const luaL_Reg modules[] = {
     {"love.physics", love::physics::box2d::luaopen_love_physics},
     {"love.system", luaopen_love_system},
     {"love.timer", luaopen_love_timer},
+    {"love.thread", luaopen_threads},
     {"love.wiimote", luaopen_love_wiimote},
     {"love.window", luaopen_love_window},
     {"love.nogame", luaopen_love_nogame},
@@ -111,7 +112,8 @@ int luaopen_love(lua_State *L) {
   lua_pushstring(L, "love.jitsetup");
   lua_call(L, 1, 1);
 
-  luaopen_threads(L, modules);
+  //luaopen_threads(L, modules);
+  set_global_modules(modules);
 
   static const char *MAIN_THREAD_KEY = "_love_mainthread";
 
@@ -264,7 +266,11 @@ int initialize(int argc, char **argv) {
 
     lua_getglobal(L, "require");
     lua_pushstring(L, "love.boot");
-    lua_call(L, 1, 1);
+    //lua_call(L, 1, 1);
+    int value = lua_pcall(L, 1, 1, 0);
+
+    if(value != 0)
+      printf("ERROR : %s", lua_tostring(L, -1));
 
     // retval = 0;
     int done = 0;
