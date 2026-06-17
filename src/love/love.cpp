@@ -24,7 +24,9 @@ extern "C" {
 #include "modules/system/system.hpp"
 #include "modules/timer/timer.hpp"
 #include "modules/wiimote/wiimote.hpp"
+#include "modules/joystick/joystick_wrapper.h"
 #include "modules/thread/thread_wrapper.h"
+#include "modules/mouse/mouse.hpp"
 
 #ifndef NO_LIBMII
 #include "modules/mii/miimodule.hpp"
@@ -69,10 +71,12 @@ static const luaL_Reg modules[] = {
 #ifdef USE_LIBMII
     {"love.mii", luaopen_love_mii},
 #endif
+    {"love.mouse", luaopen_love_mouse},
     {"love.physics", love::physics::box2d::luaopen_love_physics},
     {"love.system", luaopen_love_system},
     {"love.timer", luaopen_love_timer},
     {"love.thread", luaopen_threads},
+    {"love.thread", luaopen_love_joystick},
     {"love.wiimote", luaopen_love_wiimote},
     {"love.window", luaopen_love_window},
     {"love.nogame", luaopen_love_nogame},
@@ -112,7 +116,7 @@ int luaopen_love(lua_State *L) {
   lua_pushstring(L, "love.jitsetup");
   lua_call(L, 1, 1);
 
-  //luaopen_threads(L, modules);
+  luaopen_threads(L);
   set_global_modules(modules);
 
   static const char *MAIN_THREAD_KEY = "_love_mainthread";
@@ -252,9 +256,9 @@ int initialize(int argc, char **argv) {
 
 
     //currently force path
-    std::filesystem::current_path(
-        std::filesystem::path("sd://LOVEPower/game/")
-    );
+    //std::filesystem::current_path(
+    //    std::filesystem::path("sd://LOVEPower/game/")
+    //);
 
 
     luastate["arg"] = luastate.create_table();

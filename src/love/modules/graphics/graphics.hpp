@@ -9,6 +9,7 @@
 #include "classes/quad.hpp"
 #include "classes/texture.hpp"
 #include "sol/optional_implementation.hpp"
+#include "sol/table.hpp"
 
 extern "C" {
 #include <lua.h>
@@ -66,6 +67,7 @@ void draw_quad_x_y_r_sx_sy_ox_oy(
 
 love::graphics::Texture newImage(std::string file);
 love::graphics::Texture newImage_data(love::data::Data data);
+love::graphics::Texture newImage_file_data(std::string file, sol::table settings);
 
 love::graphics::Quad newQuad(float x, float y, float width, float height,
                              float sw, float sh);

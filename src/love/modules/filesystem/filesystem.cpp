@@ -4,10 +4,12 @@
 #include <filesystem>
 #include <fstream>
 #include <sol/sol.hpp>
+#include <sstream>
 #include <string>
 #include <sys/dirent.h>
 
 #include "filesystem.hpp"
+#include "sol/types.hpp"
 extern "C" {
 #include <lua.h>
 }
@@ -46,6 +48,9 @@ std::string getFilePath(const std::string &file) {
     }
   }
 
+
+  printf("final path : %s\n", path.c_str());
+  printf("file exists ? : %d\n", std::filesystem::exists(path));
   return path;
 }
 
@@ -119,6 +124,35 @@ int getDirectoryItems(lua_State *L) {
   return 1;
 }
 
+std::string read(const std::string& file, sol::this_state lua)
+{
+  std::string s = "";
+  std::ifstream t(file);
+  if(t.is_open())
+  {
+    std::stringstream ss;
+    ss << t.rdbuf();
+    s = ss.str();
+  }
+  return s;
+}
+
+bool remove(const std::string& file, sol::this_state lua)
+{  
+  return std::filesystem::remove(file);
+}
+
+
+bool write(const std::string& file, const std::string& content, sol::optional<int> size, sol::this_state lua)
+{
+  std::ofstream f(file);
+  if(!f.is_open()) return false;
+
+  size_t len = size ? size.value() : content.size();
+  f.write(content.c_str(), len);
+  return true; 
+}
+
 } // namespace filesystem
 } // namespace love
 
@@ -128,12 +162,16 @@ int luaopen_love_filesystem(lua_State *L) {
   sol::state_view luastate(L);
 
   luastate["love"]["filesystem"] = luastate.create_table_with(
-      "init", love::filesystem::init, "load", love::filesystem::load, "getInfo",
-      love::filesystem::getInfo,
+      "init", love::filesystem::init, "load", love::filesystem::load, 
+      "getInfo", love::filesystem::getInfo,
       //"newFile", love::filesystem::newFile,
-      "getDirectoryItems", love::filesystem::getDirectoryItems, "exists",
-      love::filesystem::exists, "preferSaveDirectory",
-      love::filesystem::preferSaveDirectory);
+      "getDirectoryItems", love::filesystem::getDirectoryItems, 
+      "exists", love::filesystem::exists, 
+      "preferSaveDirectory", love::filesystem::preferSaveDirectory,
+      "read", love::filesystem::read,
+      "remove", love::filesystem::remove,
+      "write", love::filesystem::write
+      );
 
   return 1;
 }

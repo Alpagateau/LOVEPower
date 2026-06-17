@@ -1,5 +1,6 @@
 #pragma once
 
+#include "sol/optional_implementation.hpp"
 #include <sol/sol.hpp>
 #include <string>
 
@@ -26,9 +27,9 @@ namespace love {
         sol::protected_function       lines(const std::string& file, sol::this_state lua); // TODO
         int                           getSize(const std::string& file, sol::this_state lua); // IN BYTES!! TODO
         int                           getDirectoryItems(lua_State* L);
-        std::optional<std::string>    read(const std::string& file, sol::this_state lua); // TODO
-        std::pair<bool, std::string>  write(const std::string& file, const std::string& content, sol::this_state lua); // TODO
-        std::pair<bool, std::string>  remove(const std::string& file, sol::this_state lua); // TODO
+        std::string                   read(const std::string& file, sol::this_state lua);
+        bool                          write(const std::string& file, const std::string& content, sol::optional<int> size, sol::this_state lua);
+        bool                          remove(const std::string& file, sol::this_state lua);
         std::pair<bool, std::string>  mkdir(const std::string& dir, sol::this_state lua); // TODO
         std::pair<bool, std::string>  newFile(const std::string& file, sol::this_state lua); // TODO
         std::pair<bool, std::string>  newFileData(const std::string& file, const std::string& data, sol::this_state lua); // TODO

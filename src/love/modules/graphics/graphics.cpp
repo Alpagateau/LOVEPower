@@ -358,6 +358,9 @@ namespace love {
             return love::graphics::Texture(file);
         }
 
+        love::graphics::Texture newImage_file_data(std::string file, sol::table settings) {
+            return love::graphics::Texture(file);
+        }
         love::graphics::Texture newImage_data(love::data::Data data) {
             return love::graphics::Texture(data);
         }
@@ -596,6 +599,7 @@ int luaopen_love_graphics(lua_State *L) {
         "newImage", sol::overload(
             love::graphics::newImage,
             love::graphics::newImage_data,
+            love::graphics::newImage_file_data,
             love::graphics::newImage_empty
         ),
         "newQuad", love::graphics::newQuad,

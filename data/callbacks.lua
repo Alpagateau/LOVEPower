@@ -9,6 +9,8 @@ function love.createhandlers()
             if love.lowmemory then love.lowmemory() end
             collectgarbage()
             collectgarbage()
+        end,
+        mousemoved = function(x, y, dx, dy, touch)
         end
     }, {
         __index = function(self, name)
@@ -95,7 +97,7 @@ function love.errhand(err)
 
     while true do
         love.graphics.origin()
-        love.graphics.setColor(1, 1, 1)
+        love.graphics.setColor(89/255, 157/255, 220/255)
         love.graphics.print("Error:", 10, 10)
         -- get a table of all the lines
         local lines = {}
@@ -104,7 +106,7 @@ function love.errhand(err)
         end
         local y = 30
         for i, line in ipairs(lines) do
-            love.graphics.print(line, 10, y)
+            love.graphics.print(line, 20, y)
             y = y + 20
         end
         love.graphics.present()

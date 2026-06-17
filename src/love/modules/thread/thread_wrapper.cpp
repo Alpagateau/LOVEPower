@@ -154,6 +154,9 @@ extern "C" int luaopen_threads(lua_State *L) {
   {
     global_mutex = SDL_CreateMutex();
   }
+
+  printf("<== LOVE THREADS ==>\n");
+
   // 2. Create and set up the Thread Object Metatable
   luaL_newmetatable(L, LUA_THREAD_META);
   lua_pushvalue(L, -1);

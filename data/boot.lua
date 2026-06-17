@@ -161,7 +161,7 @@ local function deferErrHand(...)
 end
 
 local function safe_call(f)
-    local ok, err = pcall(f, deferErrHand)
+    local ok, err = xpcall(f, deferErrHand)
     if not ok then
         return false, err
     end

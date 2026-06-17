@@ -1,4 +1,5 @@
 #include <FreeTypeGX/FreeTypeGX.h>
+#include <filesystem>
 #include <sol/sol.hpp>
 #include <vector>
 #include <stdio.h>
@@ -30,20 +31,46 @@ Font::Font(int size) {
 
 Font::Font(std::string file) {
   uint8_t *data = nullptr;
-  int dataSize = GRRLIB_LoadFile(filesystem::getFilePath(file).c_str(), &data);
+  int dataSize = GRRLIB_LoadFile(("sd://LOVEPower/" + filesystem::getFilePath(file)).c_str(), &data);
   if (dataSize <= 0) {
-    throw std::runtime_error("Font file not found: " +
-                             filesystem::getFilePath(file));
+    switch(dataSize){
+      case 0:
+        throw std::runtime_error("Empty File: " + filesystem::getFilePath(file));
+        break;
+      case -1:
+        throw std::runtime_error("File Not Found: " + filesystem::getFilePath(file));
+        break;
+      case -2:
+        throw std::runtime_error("OutOfMemory: " + filesystem::getFilePath(file));
+        break;
+      case -3: 
+        throw std::runtime_error("FileReadError: " + filesystem::getFilePath(file));
+        break;
+    }
   }
   _createFont(data, dataSize, DEFAULT_FONT_SIZE);
 }
 
 Font::Font(std::string file, int size) {
   uint8_t *data = nullptr;
-  int dataSize = GRRLIB_LoadFile(filesystem::getFilePath(file).c_str(), &data);
+  std::string f = "sd:/LOVEPower/" + filesystem::getFilePath(file);
+  printf("[FONT] file %s exists ? : %d\n", f.c_str(), std::filesystem::exists(f.c_str()));
+  int dataSize = GRRLIB_LoadFile(f.c_str(), &data);
   if (dataSize <= 0) {
-    throw std::runtime_error("Font file not found: " +
-                             filesystem::getFilePath(file));
+    switch(dataSize){
+      case 0:
+        throw std::runtime_error("Empty File: " + filesystem::getFilePath(file));
+        break;
+      case -1:
+        throw std::runtime_error("File Not Found: " + filesystem::getFilePath(file));
+        break;
+      case -2:
+        throw std::runtime_error("OutOfMemory: " + filesystem::getFilePath(file));
+        break;
+      case -3: 
+        throw std::runtime_error("FileReadError: " + filesystem::getFilePath(file));
+        break;
+    }
   }
   _createFont(data, dataSize, size);
 }

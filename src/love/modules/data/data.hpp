@@ -1,4 +1,8 @@
 #pragma once
+#include "sol/state.hpp"
+#include <cctype>
+#include <cstdint>
+#include <vector>
 extern "C" {
     #include <lua.h>
 }

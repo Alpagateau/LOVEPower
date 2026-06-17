@@ -36,6 +36,7 @@ SOURCES		:=	src \
 			src/love/modules/math/classes \
 			src/love/modules/mii \
 			src/love/modules/mii/classes \
+			src/love/modules/mouse \
 			src/love/modules/physics/ \
 			src/love/modules/physics/box2d \
 			src/love/modules/system \
@@ -45,12 +46,13 @@ SOURCES		:=	src \
 			src/love/modules/wiimote \
 			src/love/modules/wiimote/classes \
 			src/love/modules/window \
+			src/love/modules/joystick \
 			src/love/modules/data \
 			src/lib/FreeTypeGX \
 			src/lib/audiogc \
 			src/lib/pngu \
 			src/lib/GRRLIB \
-			src/lib/GRRLIB/grrlib
+			src/lib/GRRLIB/grrlib	
 
 DATA		:=	data 
 INCLUDES    :=  src/lib/ src/lib/pngu /opt/devkitpro/libogc/include/

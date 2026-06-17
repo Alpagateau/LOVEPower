@@ -1,5 +1,6 @@
 #pragma once
 
+#include "sol/forward.hpp"
 #include <sol/sol.hpp>
 #include <tuple>
 #include <vector>
@@ -18,7 +19,7 @@ namespace love {
         void __init(sol::state &luastate);
 
         void pump(sol::this_state lua);
-        event_t poll(sol::this_state lua);
+        sol::object poll(sol::this_state lua);
         void push(sol::object name, sol::object a, sol::object b, sol::object c, sol::object d, sol::object e, sol::object f, sol::this_state s);
         void quit(sol::this_state lua);
 
