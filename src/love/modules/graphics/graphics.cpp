@@ -1,630 +1,598 @@
+#include <cmath>
+#include <cstdint>
+#include <ogc/conf.h>
 #include <ogc/gx.h>
 #include <sol/sol.hpp>
 #include <grrlib.h>
-#include <ogc/conf.h>
-#include <tuple>
-#include <string>
+#include <sstream>
 #include <stdexcept>
-#include <cmath>
+#include <string>
+#include <tuple>
 #include <vector>
-#include <cstdint>
 
-#include "classes/texture.hpp"
+#include "classes/canvas.hpp"
 #include "classes/font.hpp"
 #include "classes/quad.hpp"
+#include "classes/texture.hpp"
 #include "classes/transform.hpp"
 
-#include "graphics.hpp"
 #include "Vera_ttf.h"
+#include "graphics.hpp"
 
 #include "../data/data.hpp"
 
 #include "../../common/math.h"
+#include "sol/raii.hpp"
+#include "sol/types.hpp"
 
-#define NAN_GUARD(x) if(std::isnan( (x) )) return;
+#define NAN_GUARD(x)                                                           \
+  if (std::isnan((x)))                                                         \
+    return;
 #define OPT(a, d) (a) ? (a).value() : (d)
 
 extern "C" {
-    #include <lua.h>
+#include <lua.h>
 }
 
 namespace {
-    unsigned int color             = 0xffffffff;
-    unsigned int backgroundColor   = 0x00000000;
-    love::graphics::Font *curFont  = nullptr;
-    
-    int width  = 640;
-    int height = 480;
+unsigned int color = 0xffffffff;
+unsigned int backgroundColor = 0x00000000;
+love::graphics::Font *curFont = nullptr;
 
-    int lineWidth = 1;
+int width = 640;
+int height = 480;
 
-    std::vector<love::graphics::Transform> transforms;
-}
+int lineWidth = 1;
+
+std::vector<love::graphics::Transform> transforms;
+} // namespace
 
 namespace love {
-    namespace graphics {
+namespace graphics {
 
-        std::string draw_log = "";
+std::stringstream draw_log;
 
-        void __init(sol::state &luastate) {
-            GRRLIB_Init();
+void __init(sol::state &luastate) {
+  GRRLIB_Init();
+  GX_SetPixelFmt(GX_PF_RGBA6_Z24, GX_ZC_LINEAR);
+  // set default font
+  curFont = new love::graphics::Font();
 
-            // set default font
-            curFont = new love::graphics::Font();
-
-            __registerTypes(luastate);
-        }
-
-        void __registerTypes(sol::state &luastate) {
-            luastate.new_usertype<love::graphics::Texture>(
-                "Texture",
-                sol::no_constructor,
-                "getWidth", &love::graphics::Texture::getWidth,
-                "getHeight", &love::graphics::Texture::getHeight,
-                "getDimensions", &love::graphics::Texture::getDimensions
-            );
-            
-            luastate.new_usertype<love::graphics::Font>(
-                "Font",
-                sol::no_constructor,
-                "getWidth", &love::graphics::Font::getWidth,
-                "getHeight", &love::graphics::Font::getHeight
-            );
-
-            luastate.new_usertype<love::graphics::Quad>(
-                "Quad",
-                sol::no_constructor,
-                "getViewport", &love::graphics::Quad::getViewport,
-                "setViewport", &love::graphics::Quad::setViewport
-            );
-        }
-
-        static GXColor make_gxcolor_from_uint32(unsigned int packed) {
-            GXColor c;
-            c.r = static_cast<uint8_t>((packed >> 24) & 0xFF);
-            c.g = static_cast<uint8_t>((packed >> 16) & 0xFF);
-            c.b = static_cast<uint8_t>((packed >> 8) & 0xFF);
-            c.a = static_cast<uint8_t>(packed & 0xFF);
-            return c;
-        }
-
-        static int16_t float_to_int16_rounded(float v) {
-            return static_cast<int16_t>(std::lround(v));
-        }
-
-        #pragma region Color
-
-        void _setColor(float r, float g, float b, float a) {
-            unsigned int r_int = static_cast<unsigned int>(r * 255);
-            unsigned int g_int = static_cast<unsigned int>(g * 255);
-            unsigned int b_int = static_cast<unsigned int>(b * 255);
-            unsigned int a_int = static_cast<unsigned int>(a * 255);
-            color = (r_int << 24) | (g_int << 16) | (b_int << 8) | a_int;
-        }
-
-        void setColor_float4(float r, float g, float b, sol::optional<float> a) {
-            _setColor(r, g, b, a ? a.value() : 1.0f);
-        }
-
-        void _setBackgroundColor(float r, float g, float b, float a) {
-            unsigned int r_int = static_cast<unsigned int>(r * 255);
-            unsigned int g_int = static_cast<unsigned int>(g * 255);
-            unsigned int b_int = static_cast<unsigned int>(b * 255);
-            unsigned int a_int = static_cast<unsigned int>(a * 255);
-            backgroundColor = (r_int << 24) | (g_int << 16) | (b_int << 8) | a_int;
-        }
-
-        void setBackgroundColor_float4(float r, float g, float b, sol::optional<float> a) {
-            _setBackgroundColor(r, g, b, a ? a.value() : 1.0f);
-        }
-
-        std::tuple<float, float, float, float> getBackgroundColor() {
-            float r = (backgroundColor >> 24) & 0xFF;
-            float g = (backgroundColor >> 16) & 0xFF;
-            float b = (backgroundColor >> 8) & 0xFF;
-            float a = backgroundColor & 0xFF;
-            return std::make_tuple(r / 255.0f, g / 255.0f, b / 255.0f, a / 255.0f);
-        }
-
-        std::tuple<float, float, float, float> getColor() {
-            float r = (color >> 24) & 0xFF;
-            float g = (color >> 16) & 0xFF;
-            float b = (color >> 8) & 0xFF;
-            float a = color & 0xFF;
-            return std::make_tuple(r / 255.0f, g / 255.0f, b / 255.0f, a / 255.0f);
-        }
-
-        #pragma region Shapes
-
-        void rectangle(const std::string &mode, float x, float y, float width, float height) {
-            GRRLIB_Rectangle(x, y, width, height, color, mode.compare("fill") == 0);
-        }
-
-        void circle(const std::string &mode, float x, float y, float radius) {
-            GRRLIB_Circle(x, y, radius, color, mode.compare("fill") == 0);
-        }
-
-        void polygon_variadic(const std::string &mode, sol::variadic_args args) {
-            std::vector<guVector> verts;
-            
-            unsigned int size = args.size();
-
-            verts.reserve(size / 2);
-            for (unsigned int i = 0; i < size; i += 2) {
-                verts.push_back(guVector{
-                    args[i].as<float>(),
-                    args[i + 1].as<float>(),
-                    0.0
-                });
-            }
-
-            bool fill = mode.compare("fill") == 0;
-            u32 colors[size / 2];
-            for (unsigned int i = 0; i < size / 2; i++) {
-                colors[i] = color;
-            }
-            GRRLIB_GXEngine(verts.data(), colors, size / 2, fill ? GX_TRIANGLEFAN : GX_LINESTRIP);
-        }
-
-        void polygon_verts(const std::string &mode, sol::table vertices) {
-            std::vector<guVector> verts;
-            
-            unsigned int size = vertices.size();
-
-            verts.reserve(size / 2);
-
-            for (unsigned int i = 1; i < size; i += 2) {
-                verts.push_back(guVector{
-                    vertices.get<float>(i),
-                    vertices.get<float>(i + 1),
-                    0.0
-                });
-            }
-
-            bool fill = mode.compare("fill") == 0;
-            u32 colors[size / 2];
-            for (unsigned int i = 0; i < size / 2; i++) {
-                colors[i] = color;
-            }
-            GRRLIB_GXEngine(verts.data(), colors, size / 2, fill ? GX_TRIANGLEFAN : GX_LINESTRIP);
-        }
-
-        void line_variadic(sol::variadic_args args) {
-            GX_SetLineWidth(lineWidth, GX_TO_ZERO);
-
-            std::vector<guVector> verts;
-            unsigned int size = args.size();
-            verts.reserve(size / 2);
-            for (unsigned int i = 0; i < size; i += 2) {
-                verts.push_back(guVector{
-                    args[i].as<float>(),
-                    args[i + 1].as<float>(),
-                    0.0
-                });
-            }
-
-            GX_Begin(GX_LINES, GX_VTXFMT0, size / 2);
-                for (unsigned int i = 0; i < size / 2; i++) {
-                    GX_Color1u32(color); // Colour is always the same
-                    GX_Position3f32(verts[i].x, verts[i].y, 0.0f);
-                    GX_TexCoord2f32(0.0, 0.0);
-                }
-            GX_End();
-        }
-
-        void line_verts(sol::table vertices) {
-            GX_SetLineWidth(lineWidth, GX_TO_ZERO);
-
-            std::vector<guVector> verts;
-            unsigned int size = vertices.size();
-            verts.reserve(size / 2);
-            for (unsigned int i = 1; i < size; i += 2) {
-                verts.push_back(guVector{
-                    vertices.get<float>(i),
-                    vertices.get<float>(i + 1),
-                    0.0
-                });
-            }
-
-            GX_Begin(GX_LINES, GX_VTXFMT0, size / 2);
-                for (unsigned int i = 0; i < size / 2; i++) {
-                    GX_Color1u32(color);
-                    GX_Position3f32(verts[i].x, verts[i].y, 0.0f);
-                    GX_TexCoord2f32(0.0, 0.0);
-                }
-            GX_End();
-        }
-
-        #pragma region Textures
-
-        void _draw(love::graphics::Texture &texture,
-            float x, float y, float rotation, float sx, float sy,
-            float ox, float oy
-        ) {
-
-            draw_log += "_draw\n";
-            if (!texture.texture) {
-                return;
-            }
-            NAN_GUARD(x)
-            NAN_GUARD(y)
-            NAN_GUARD(rotation)
-            NAN_GUARD(sx)
-            NAN_GUARD(sy)
-            NAN_GUARD(ox)
-            NAN_GUARD(oy)
-            
-            float rotationDeg = rotation * (180.0f / LOVE_M_PI);
-            float cos_r = cos(rotation);
-            float sin_r = sin(rotation);
-
-            float rx = ox * sx * cos_r - oy * sy * sin_r;
-            float ry = ox * sx * sin_r + oy * sy * cos_r;
-
-            x -= rx;
-            y -= ry;
-
-            if (transforms.size() > 0) {
-                auto &t = transforms.back();
-                x += t.x;
-                y += t.y;
-                rotationDeg += t.r * (180.0f / LOVE_M_PI);
-                sx *= t.sx;
-                sy *= t.sy;
-            }
-
-            GRRLIB_DrawImg(x, y, texture.texture, rotationDeg, sx, sy, color);
-        }
-
-        void _draw_quad(love::graphics::Texture &texture, love::graphics::Quad &quad,
-            float x, float y, float rotation, float sx, float sy,
-            float ox, float oy
-        ) {
-
-            draw_log += "_draw_quad\n";
-
-            if (!texture.texture) {
-                return;
-            }
-            NAN_GUARD(x)
-            NAN_GUARD(y)
-            NAN_GUARD(rotation)
-            NAN_GUARD(sx)
-            NAN_GUARD(sy)
-            NAN_GUARD(ox)
-            NAN_GUARD(oy)
-            float rotationDeg = rotation * (180.0f / LOVE_M_PI);
-            float cos_r = cos(rotation);
-            float sin_r = sin(rotation);
-
-            float rx = ox * sx * cos_r - oy * sy * sin_r;
-            float ry = ox * sx * sin_r + oy * sy * cos_r;
-
-            x -= rx;
-            y -= ry;
-
-            if (transforms.size() > 0) {
-                auto &t = transforms.back();
-                x += t.x;
-                y += t.y;
-                rotationDeg += t.r * (180.0f / LOVE_M_PI);
-                sx *= t.sx;
-                sy *= t.sy;
-            }
-
-            GRRLIB_DrawPart(
-                x, y,
-                quad.quadX, quad.quadY, quad.quadWidth, quad.quadHeight,
-                texture.texture, rotationDeg, sx, sy, color
-            );
-        }
-
-        void draw_x_y_r_sx_sy_ox_oy(
-            love::graphics::Texture &texture, 
-            sol::optional<float> x, sol::optional<float> y, 
-            sol::optional<float> rotation, 
-            sol::optional<float> sx, sol::optional<float> sy, 
-            sol::optional<float> ox, sol::optional<float> oy) {
-            _draw(
-                texture, 
-                OPT(x, 0), 
-                OPT(y, 0), 
-                OPT(rotation, 0), 
-                OPT(sx, 1), 
-                OPT(sy, OPT(sx, 1)), 
-                OPT(ox, 0), 
-                OPT(oy, 0));
-        }
-
-        void draw_quad_x_y_r_sx_sy_ox_oy(
-            love::graphics::Texture &texture, 
-            love::graphics::Quad &quad, 
-            sol::optional<float> x, sol::optional<float> y, 
-            sol::optional<float> rotation, 
-            sol::optional<float> sx, sol::optional<float> sy, 
-            sol::optional<float> ox, sol::optional<float> oy) {
-            _draw_quad(
-                texture, quad, 
-                OPT(x, 0), 
-                OPT(y, 0), 
-                OPT(rotation, 0), 
-                OPT(sx, 1), 
-                OPT(sy, OPT(sx, 1)), 
-                OPT(ox, 0),
-                OPT(oy, 0));
-        }
-
-        love::graphics::Texture newImage(std::string file) {
-            return love::graphics::Texture(file);
-        }
-
-        love::graphics::Texture newImage_file_data(std::string file, sol::table settings) {
-            return love::graphics::Texture(file);
-        }
-        love::graphics::Texture newImage_data(love::data::Data data) {
-            return love::graphics::Texture(data);
-        }
-
-        love::graphics::Texture newImage_empty() {
-            return love::graphics::Texture();
-        }
-
-        love::graphics::Quad newQuad(float x, float y, float width, float height, float sw, float sh) {
-            return love::graphics::Quad(x, y, width, height, sw, sh);
-        }
-
-        #pragma region Fonts
-        void setFont(love::graphics::Font &font) {
-            curFont = &font;
-        }
-
-        love::graphics::Font newFont() {
-            return love::graphics::Font();
-        }
-        love::graphics::Font newFont_size(int size) {
-            return love::graphics::Font(size);
-        }
-        love::graphics::Font newFont_file(std::string file) {
-            return love::graphics::Font(file);
-        }
-        love::graphics::Font newFont_file_size(std::string file, int size) {
-            return love::graphics::Font(file, size);
-        }
-
-        void _print(const std::string &text, float x, float y, float rotation, float sx, float sy, float ox, float oy) {
-          
-            if (!curFont) {
-                throw std::runtime_error("No font set for printing text.");
-            }
-            float rotationDeg = rotation * (180.0f / LOVE_M_PI);
-            float cos_r = cos(rotation);
-            float sin_r = sin(rotation);
-
-            float rx = ox * sx * cos_r - oy * sy * sin_r;
-            float ry = ox * sx * sin_r + oy * sy * cos_r;
-
-            x -= rx;
-            y -= ry;
-
-            if (transforms.size() > 0) {
-                auto &t = transforms.back();
-                x += t.x;
-                y += t.y;
-                rotationDeg += t.r * (180.0f / LOVE_M_PI);
-                sx *= t.sx;
-                sy *= t.sy;
-            }
-
-            GXColor gxColor = make_gxcolor_from_uint32(color);
-            auto wide = utf8_to_wchar_vec(text);
-            curFont->font->drawText(float_to_int16_rounded(x), float_to_int16_rounded(y), wide.data(), gxColor, FTGX_NULL);
-        }
-
-        void print(const std::string &text) {
-            _print(text, 0, 0, 0, 1, 1, 0, 0);
-        }
-
-        void print_x(const std::string &text, float x) {
-            _print(text, x, 0, 0, 1, 1, 0, 0);
-        }
-
-        void print_x_y(const std::string &text, float x, float y) {
-            _print(text, x, y, 0, 1, 1, 0, 0);
-        }
-
-        void print_x_y_r(const std::string &text, float x, float y, float rotation) {
-            _print(text, x, y, rotation, 1, 1, 0, 0);
-        }
-
-        void print_x_y_r_sx(const std::string &text, float x, float y, float rotation, float sx) {
-            _print(text, x, y, rotation, sx, 1, 0, 0);
-        }
-
-        void print_x_y_r_sx_sy(const std::string &text, float x, float y, float rotation, float sx, float sy) {
-            _print(text, x, y, rotation, sx, sy, 0, 0);
-        }
-
-        void print_x_y_r_sx_sy_ox(const std::string &text, float x, float y, float rotation, float sx, float sy, float ox) {
-            _print(text, x, y, rotation, sx, sy, ox, 0);
-        }
-
-        void print_x_y_r_sx_sy_ox_oy(const std::string &text, float x, float y, float rotation, float sx, float sy, float ox, float oy) {
-            _print(text, x, y, rotation, sx, sy, ox, oy);
-        }
-
-        #pragma region Helpers
-
-        bool isActive() {
-            return true;
-        }
-
-        void origin() {
-            // reset color
-            color = 0xffffffff;
-            GRRLIB_2dMode();
-        }
-
-        void _clear(float r, float g, float b, float a) {
-            unsigned int r_int = static_cast<unsigned int>(r * 255);
-            unsigned int g_int = static_cast<unsigned int>(g * 255);
-            unsigned int b_int = static_cast<unsigned int>(b * 255);
-            unsigned int a_int = static_cast<unsigned int>(a * 255);
-              
-            GXColor clear_color = {(u8)r_int, (u8)g_int, (u8)b_int, (u8)a_int};
-            GX_SetCopyClear(clear_color, GX_MAX_Z24);
-            //GRRLIB_FillScreen((r_int << 24) | (g_int << 16) | (b_int << 8) | a_int);
-        }
-
-        void clear_float4(float r, float g, float b, float a) {
-            _clear(r, g, b, a);
-        }
-
-        void clear_float3(float r, float g, float b) {
-            _clear(r, g, b, 1.0f);
-        }
-
-        void clear() {
-            _clear(0, 0, 0, 1.0f);
-        }
-
-        void present() {
-            draw_log.clear();
-            GRRLIB_Render();
-        }
-
-        void push() {
-            if (!transforms.empty()) {
-                transforms.push_back(transforms.back().clone());
-            } else {
-                transforms.push_back(Transform());
-            }
-        }
-        
-        void pop() {
-            if (!transforms.empty()) {
-                transforms.pop_back();
-            }
-        }
-        
-        void translate(float x, float y) {
-            if (!transforms.empty()) {
-                transforms.back().translate(x, y);
-            }
-        }
-        
-        void rotate(float r) {
-            if (!transforms.empty()) {
-                transforms.back().rotate(r);
-            }
-        }
-        
-        void scale(float sx, float sy) {
-            if (!transforms.empty()) {
-                transforms.back().scale(sx, sy);
-            }
-        }
-        
-        int getWidth() {
-            return width;
-        }
-
-        int getHeight() {
-            return height;
-        }
-
-        std::tuple<int, int> getDimensions() {
-            return std::make_tuple(getWidth(), getHeight());
-        }
-
-        void setLineWidth(int width) {
-            if (width < 1) {
-                width = 1;
-            }
-            lineWidth = width;
-        }
-
-        int getLineWidth() {
-            return lineWidth;
-        }
-
-        #pragma endregion
-    }
+  __registerTypes(luastate);
 }
 
-int luaopen_love_graphics(lua_State *L) {
+void __registerTypes(sol::state &luastate) {
+  luastate.new_usertype<love::graphics::Texture>(
+      "Texture", sol::no_constructor, "getWidth",
+      &love::graphics::Texture::getWidth, "getHeight",
+      &love::graphics::Texture::getHeight, "getDimensions",
+      &love::graphics::Texture::getDimensions);
+
+  luastate.new_usertype<love::graphics::Font>(
+      "Font", sol::no_constructor, "getWidth", &love::graphics::Font::getWidth,
+      "getHeight", &love::graphics::Font::getHeight);
+
+  luastate.new_usertype<love::graphics::Quad>(
+      "Quad", sol::no_constructor, "getViewport",
+      &love::graphics::Quad::getViewport, "setViewport",
+      &love::graphics::Quad::setViewport);
+}
+
+static GXColor make_gxcolor_from_uint32(unsigned int packed) {
+  GXColor c;
+  c.r = static_cast<uint8_t>((packed >> 24) & 0xFF);
+  c.g = static_cast<uint8_t>((packed >> 16) & 0xFF);
+  c.b = static_cast<uint8_t>((packed >> 8) & 0xFF);
+  c.a = static_cast<uint8_t>(packed & 0xFF);
+  return c;
+}
+
+static int16_t float_to_int16_rounded(float v) {
+  return static_cast<int16_t>(std::lround(v));
+}
+
+#pragma region Color
+
+void _setColor(float r, float g, float b, float a) {
+  unsigned int r_int = static_cast<unsigned int>(r * 255);
+  unsigned int g_int = static_cast<unsigned int>(g * 255);
+  unsigned int b_int = static_cast<unsigned int>(b * 255);
+  unsigned int a_int = static_cast<unsigned int>(a * 255);
+  color = (r_int << 24) | (g_int << 16) | (b_int << 8) | a_int;
+}
+
+void setColor_float4(float r, float g, float b, sol::optional<float> a) {
+  _setColor(r, g, b, a ? a.value() : 1.0f);
+}
+
+void _setBackgroundColor(float r, float g, float b, float a) {
+  unsigned int r_int = static_cast<unsigned int>(r * 255);
+  unsigned int g_int = static_cast<unsigned int>(g * 255);
+  unsigned int b_int = static_cast<unsigned int>(b * 255);
+  unsigned int a_int = static_cast<unsigned int>(a * 255);
+  backgroundColor = (r_int << 24) | (g_int << 16) | (b_int << 8) | a_int;
+}
+
+void setBackgroundColor_float4(float r, float g, float b,
+                               sol::optional<float> a) {
+  _setBackgroundColor(r, g, b, a ? a.value() : 1.0f);
+}
+
+std::tuple<float, float, float, float> getBackgroundColor() {
+  float r = (backgroundColor >> 24) & 0xFF;
+  float g = (backgroundColor >> 16) & 0xFF;
+  float b = (backgroundColor >> 8) & 0xFF;
+  float a = backgroundColor & 0xFF;
+  return std::make_tuple(r / 255.0f, g / 255.0f, b / 255.0f, a / 255.0f);
+}
+
+std::tuple<float, float, float, float> getColor() {
+  float r = (color >> 24) & 0xFF;
+  float g = (color >> 16) & 0xFF;
+  float b = (color >> 8) & 0xFF;
+  float a = color & 0xFF;
+  return std::make_tuple(r / 255.0f, g / 255.0f, b / 255.0f, a / 255.0f);
+}
+
+#pragma region Shapes
+
+void rectangle(const std::string &mode, float x, float y, float width,
+               float height) {
+  GRRLIB_Rectangle(x, y, width, height, color, mode.compare("fill") == 0);
+}
+
+void circle(const std::string &mode, float x, float y, float radius) {
+  GRRLIB_Circle(x, y, radius, color, mode.compare("fill") == 0);
+}
+
+void polygon_variadic(const std::string &mode, sol::variadic_args args) {
+  std::vector<guVector> verts;
+
+  unsigned int size = args.size();
+
+  verts.reserve(size / 2);
+  for (unsigned int i = 0; i < size; i += 2) {
+    verts.push_back(
+        guVector{args[i].as<float>(), args[i + 1].as<float>(), 0.0});
+  }
+
+  bool fill = mode.compare("fill") == 0;
+  u32 colors[size / 2];
+  for (unsigned int i = 0; i < size / 2; i++) {
+    colors[i] = color;
+  }
+  GRRLIB_GXEngine(verts.data(), colors, size / 2,
+                  fill ? GX_TRIANGLEFAN : GX_LINESTRIP);
+}
+
+void polygon_verts(const std::string &mode, sol::table vertices) {
+  std::vector<guVector> verts;
+
+  unsigned int size = vertices.size();
+
+  verts.reserve(size / 2);
+
+  for (unsigned int i = 1; i < size; i += 2) {
+    verts.push_back(
+        guVector{vertices.get<float>(i), vertices.get<float>(i + 1), 0.0});
+  }
+
+  bool fill = mode.compare("fill") == 0;
+  u32 colors[size / 2];
+  for (unsigned int i = 0; i < size / 2; i++) {
+    colors[i] = color;
+  }
+  GRRLIB_GXEngine(verts.data(), colors, size / 2,
+                  fill ? GX_TRIANGLEFAN : GX_LINESTRIP);
+}
+
+void line_variadic(sol::variadic_args args) {
+  GX_SetLineWidth(lineWidth, GX_TO_ZERO);
+
+  std::vector<guVector> verts;
+  unsigned int size = args.size();
+  verts.reserve(size / 2);
+  for (unsigned int i = 0; i < size; i += 2) {
+    verts.push_back(
+        guVector{args[i].as<float>(), args[i + 1].as<float>(), 0.0});
+  }
+
+  GX_Begin(GX_LINES, GX_VTXFMT0, size / 2);
+  for (unsigned int i = 0; i < size / 2; i++) {
+    GX_Color1u32(color); // Colour is always the same
+    GX_Position3f32(verts[i].x, verts[i].y, 0.0f);
+    GX_TexCoord2f32(0.0, 0.0);
+  }
+  GX_End();
+}
+
+void line_verts(sol::table vertices) {
+  GX_SetLineWidth(lineWidth, GX_TO_ZERO);
+
+  std::vector<guVector> verts;
+  unsigned int size = vertices.size();
+  verts.reserve(size / 2);
+  for (unsigned int i = 1; i < size; i += 2) {
+    verts.push_back(
+        guVector{vertices.get<float>(i), vertices.get<float>(i + 1), 0.0});
+  }
+
+  GX_Begin(GX_LINES, GX_VTXFMT0, size / 2);
+  for (unsigned int i = 0; i < size / 2; i++) {
+    GX_Color1u32(color);
+    GX_Position3f32(verts[i].x, verts[i].y, 0.0f);
+    GX_TexCoord2f32(0.0, 0.0);
+  }
+  GX_End();
+}
+
+#pragma region Textures
+
+void _draw(love::graphics::Texture &texture, float x, float y, float rotation,
+           float sx, float sy, float ox, float oy) {
+
+  if (!texture.texture) {
+    return;
+  }
+  NAN_GUARD(x)
+  NAN_GUARD(y)
+  NAN_GUARD(rotation)
+  NAN_GUARD(sx)
+  NAN_GUARD(sy)
+  NAN_GUARD(ox)
+  NAN_GUARD(oy)
+
+  draw_log << "_draw texture " << x << " " << y << " " << rotation << " " << sx << " " << sy << " " << ox << " " << oy << "\n";
+
+
+  float rotationDeg = rotation * (180.0f / LOVE_M_PI);
+  float cos_r = cos(rotation);
+  float sin_r = sin(rotation);
+
+  float rx = ox * sx * cos_r - oy * sy * sin_r;
+  float ry = ox * sx * sin_r + oy * sy * cos_r;
+
+  x -= rx;
+  y -= ry;
+
+  if (transforms.size() > 0) {
+    auto &t = transforms.back();
+    x += t.x;
+    y += t.y;
+    rotationDeg += t.r * (180.0f / LOVE_M_PI);
+    sx *= t.sx;
+    sy *= t.sy;
+  }
+  GRRLIB_DrawImg(x, y, texture.texture, rotationDeg, sx, sy, color);
+}
+
+void _draw_quad(love::graphics::Texture &texture, love::graphics::Quad &quad,
+                float x, float y, float rotation, float sx, float sy, float ox,
+                float oy) {
+
+  draw_log << "_draw texture quad " << x << " " << y << " " << rotation << " " << sx << " " << sy << " " << ox << " " << oy << "\n";
+
+  if (!texture.texture) {
+    return;
+  }
+  NAN_GUARD(x)
+  NAN_GUARD(y)
+  NAN_GUARD(rotation)
+  NAN_GUARD(sx)
+  NAN_GUARD(sy)
+  NAN_GUARD(ox)
+  NAN_GUARD(oy)
+  float rotationDeg = rotation * (180.0f / LOVE_M_PI);
+  float cos_r = cos(rotation);
+  float sin_r = sin(rotation);
+
+  float rx = ox * sx * cos_r - oy * sy * sin_r;
+  float ry = ox * sx * sin_r + oy * sy * cos_r;
+
+  x -= rx;
+  y -= ry;
+
+  if (transforms.size() > 0) {
+    auto &t = transforms.back();
+    x += t.x;
+    y += t.y;
+    rotationDeg += t.r * (180.0f / LOVE_M_PI);
+    sx *= t.sx;
+    sy *= t.sy;
+  }
+
+  GRRLIB_DrawPart(x, y, quad.quadX, quad.quadY, quad.quadWidth, quad.quadHeight,
+                  texture.texture, rotationDeg, sx, sy, color);
+}
+
+void _draw_canvas(love_canvas_t *c, float x, float y, float rotation, float sx,
+                  float sy, float ox, float oy) {
+
+  printf("Drawing a canvas\n");
+  draw_log << "_draw canvas " << x << " " << y << " " << rotation << " " << sx << " " << sy << " " << ox << " " << oy << "\n";
+  if (c && c->buffer && c->buffer->data) {
+    float rotationDeg = rotation * (180.0f / LOVE_M_PI);
+    float cos_r = cos(rotation);
+    float sin_r = sin(rotation);
+
+    // Track origin point adjustments
+    float rx = ox * sx * cos_r - oy * sy * sin_r;
+    float ry = ox * sx * sin_r + oy * sy * cos_r;
+
+    x -= rx;
+    y -= ry;
+
+    // Apply active push/pop transformation stacks
+    if (transforms.size() > 0) {
+      auto &t = transforms.back();
+      x += t.x;
+      y += t.y;
+      rotationDeg += t.r * (180.0f / LOVE_M_PI);
+      sx *= t.sx;
+      sy *= t.sy;
+    }
+
+    //GRRLIB_DrawImg(x, y, c->buffer, rotationDeg, sx, sy, color);
+    GRRLIB_DrawPart(x, y, 0, 0, c->viewWidth, c->viewHeight, c->buffer, rotationDeg, sx, sy, color);
+  }
+}
+
+void draw_x_y_r_sx_sy_ox_oy(love::graphics::Texture &texture,
+                            sol::optional<float> x, sol::optional<float> y,
+                            sol::optional<float> rotation,
+                            sol::optional<float> sx, sol::optional<float> sy,
+                            sol::optional<float> ox, sol::optional<float> oy) {
+  _draw(texture, OPT(x, 0), OPT(y, 0), OPT(rotation, 0), OPT(sx, 1),
+        OPT(sy, OPT(sx, 1)), OPT(ox, 0), OPT(oy, 0));
+}
+
+void draw_canvas_x_y_r_sx_sy_ox_oy(
+    love::graphics::love_canvas_t *canvas, sol::optional<float> x,
+    sol::optional<float> y, sol::optional<float> rotation,
+    sol::optional<float> sx, sol::optional<float> sy, sol::optional<float> ox,
+    sol::optional<float> oy) {
+  _draw_canvas(canvas, OPT(x, 0), OPT(y, 0), OPT(rotation, 0), OPT(sx, 1),
+               OPT(sy, OPT(sx, 1)), OPT(ox, 0), OPT(oy, 0));
+}
+
+void draw_quad_x_y_r_sx_sy_ox_oy(
+    love::graphics::Texture &texture, love::graphics::Quad &quad,
+    sol::optional<float> x, sol::optional<float> y,
+    sol::optional<float> rotation, sol::optional<float> sx,
+    sol::optional<float> sy, sol::optional<float> ox, sol::optional<float> oy) {
+  _draw_quad(texture, quad, OPT(x, 0), OPT(y, 0), OPT(rotation, 0), OPT(sx, 1),
+             OPT(sy, OPT(sx, 1)), OPT(ox, 0), OPT(oy, 0));
+}
+
+love::graphics::Texture newImage(std::string file) {
+  return love::graphics::Texture(file);
+}
+
+love::graphics::Texture newImage_file_data(std::string file,
+                                           sol::table settings) {
+  return love::graphics::Texture(file);
+}
+love::graphics::Texture newImage_data(love::data::Data data) {
+  return love::graphics::Texture(data);
+}
+
+love::graphics::Texture newImage_empty() { return love::graphics::Texture(); }
+
+love::graphics::Quad newQuad(float x, float y, float width, float height,
+                             float sw, float sh) {
+  return love::graphics::Quad(x, y, width, height, sw, sh);
+}
+
+#pragma region Fonts
+void setFont(love::graphics::Font &font) { curFont = &font; }
+
+love::graphics::Font newFont() { return love::graphics::Font(); }
+love::graphics::Font newFont_size(int size) {
+  return love::graphics::Font(size);
+}
+love::graphics::Font newFont_file(std::string file) {
+  return love::graphics::Font(file);
+}
+love::graphics::Font newFont_file_size(std::string file, int size) {
+  return love::graphics::Font(file, size);
+}
+
+void _print(const std::string &text, float x, float y, float rotation, float sx,
+            float sy, float ox, float oy) {
+
+  if (!curFont) {
+    throw std::runtime_error("No font set for printing text.");
+  }
+  float rotationDeg = rotation * (180.0f / LOVE_M_PI);
+  float cos_r = cos(rotation);
+  float sin_r = sin(rotation);
+
+  float rx = ox * sx * cos_r - oy * sy * sin_r;
+  float ry = ox * sx * sin_r + oy * sy * cos_r;
+
+  x -= rx;
+  y -= ry;
+
+  if (transforms.size() > 0) {
+    auto &t = transforms.back();
+    x += t.x;
+    y += t.y;
+    rotationDeg += t.r * (180.0f / LOVE_M_PI);
+    sx *= t.sx;
+    sy *= t.sy;
+  }
+
+  GXColor gxColor = make_gxcolor_from_uint32(color);
+  auto wide = utf8_to_wchar_vec(text);
+  curFont->font->drawText(float_to_int16_rounded(x), float_to_int16_rounded(y),
+                          wide.data(), gxColor, FTGX_NULL);
+}
+
+void print_x_y_r_sx_sy_ox_oy(const std::string &text, sol::optional<float> x,
+                             sol::optional<float> y,
+                             sol::optional<float> rotation,
+                             sol::optional<float> sx, sol::optional<float> sy,
+                             sol::optional<float> ox, sol::optional<float> oy) {
+  _print(text, x ? x.value() : 0, y ? y.value() : 0,
+         rotation ? rotation.value() : 0, sx ? sx.value() : 1,
+         sy ? sy.value() : 1, ox ? ox.value() : 0, oy ? oy.value() : 0);
+}
+
+#pragma region Helpers
+
+bool isActive() { return true; }
+
+void origin() {
+  // reset color
+  color = 0xffffffff;
+  GRRLIB_2dMode();
+}
+
+void _clear(float r, float g, float b, float a) {
+  unsigned int r_int = static_cast<unsigned int>(r * 255);
+  unsigned int g_int = static_cast<unsigned int>(g * 255);
+  unsigned int b_int = static_cast<unsigned int>(b * 255);
+  unsigned int a_int = static_cast<unsigned int>(a * 255);
   
-    printf("<== MODULE LOVE GFX ==>\n");
-    sol::state_view luastate(L);
+  GX_SetBlendMode(GX_BM_NONE, GX_BL_ONE, GX_BL_ZERO, GX_LO_CLEAR);
+  // GXColor clear_color = {(u8)r_int, (u8)g_int, (u8)b_int, (u8)a_int};
+  GRRLIB_Rectangle(0, 0, (f32)getWidth(), (f32)getHeight(),
+                   (r_int << 24) | (g_int << 16) | (b_int << 8) | a_int, true);
+  // GX_SetCopyClear(clear_color, GX_MAX_Z24);
+  // GRRLIB_FillScreen((r_int << 24) | (g_int << 16) | (b_int << 8) | a_int);
+  GX_SetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+}
 
-    luastate["love"]["graphics"] = luastate.create_table_with(
-        "setColor", love::graphics::setColor_float4,
-        "getColor", love::graphics::getColor,
-        "rectangle", love::graphics::rectangle,
-        "polygon", sol::overload(
-            love::graphics::polygon_variadic,
-            love::graphics::polygon_verts
-        ),
-        "circle", love::graphics::circle,
-        "line", sol::overload(
-            love::graphics::line_variadic,
-            love::graphics::line_verts
-        ),
-        "draw", sol::overload(
-            love::graphics::draw_x_y_r_sx_sy_ox_oy,
-            love::graphics::draw_quad_x_y_r_sx_sy_ox_oy
-        ),
-        "setFont", love::graphics::setFont,
-        "newFont", sol::overload(
-            love::graphics::newFont,
-            love::graphics::newFont_size,
-            love::graphics::newFont_file,
-            love::graphics::newFont_file_size
-        ),
-        "setNewFont", sol::overload(
-            love::graphics::newFont,
-            love::graphics::newFont_size,
-            love::graphics::newFont_file,
-            love::graphics::newFont_file_size
-        ),
-        "print", sol::overload(
-            love::graphics::print,
-            love::graphics::print_x,
-            love::graphics::print_x_y,
-            love::graphics::print_x_y_r,
-            love::graphics::print_x_y_r_sx,
-            love::graphics::print_x_y_r_sx_sy,
-            love::graphics::print_x_y_r_sx_sy_ox,
-            love::graphics::print_x_y_r_sx_sy_ox_oy
-        ),
-        "newImage", sol::overload(
-            love::graphics::newImage,
-            love::graphics::newImage_data,
-            love::graphics::newImage_file_data,
-            love::graphics::newImage_empty
-        ),
-        "newQuad", love::graphics::newQuad,
-        "setBackgroundColor", love::graphics::setBackgroundColor_float4,
-        "getBackgroundColor", love::graphics::getBackgroundColor,
-        "clear", sol::overload(
-            love::graphics::clear_float4,
-            love::graphics::clear_float3,
-            love::graphics::clear
-        ),
-        "isActive", love::graphics::isActive,
-        "origin", love::graphics::origin,
-        "present", love::graphics::present,
-        "push", love::graphics::push,
-        "pop", love::graphics::pop,
-        "translate", love::graphics::translate,
-        "rotate", love::graphics::rotate,
-        "scale", love::graphics::scale,
-        "getWidth", love::graphics::getWidth,
-        "getHeight", love::graphics::getHeight,
-        "getDimensions", love::graphics::getDimensions,
+void clear_float4(float r, float g, float b, float a) { _clear(r, g, b, a); }
 
-        "setLineWidth", love::graphics::setLineWidth,
-        "getLineWidth", love::graphics::getLineWidth
-    );
+void clear_float3(float r, float g, float b) { _clear(r, g, b, 1.0f); }
 
-    return 1;
+void clear() { _clear(0, 0, 0, 1.0f); }
+
+void present() {
+  printf("presenting : [%s]\n", draw_log.str().c_str());
+  // draw_log.clear();
+  draw_log.str("");
+  GRRLIB_Render();
+  printf("Done\n");
+}
+
+void push() {
+  if (!transforms.empty()) {
+    transforms.push_back(transforms.back().clone());
+  } else {
+    transforms.push_back(Transform());
+  }
+}
+
+void pop() {
+  if (!transforms.empty()) {
+    transforms.pop_back();
+  }
+}
+
+void translate(float x, float y) {
+  if (!transforms.empty()) {
+    transforms.back().translate(x, y);
+  }
+}
+
+void rotate(float r) {
+  if (!transforms.empty()) {
+    transforms.back().rotate(r);
+  }
+}
+
+void scale(float sx, float sy) {
+  if (!transforms.empty()) {
+    transforms.back().scale(sx, sy);
+  }
+}
+
+int getWidth() {
+  if (love::graphics::getCanvas() != nullptr)
+    return love::graphics::getCanvas()->viewWidth;
+  return width;
+}
+
+int getHeight() {
+  if (love::graphics::getCanvas() != nullptr)
+    return love::graphics::getCanvas()->viewHeight;
+  return height;
+}
+
+std::tuple<int, int> getDimensions() {
+  return std::make_tuple(getWidth(), getHeight());
+}
+
+void setLineWidth(int width) {
+  if (width < 1) {
+    width = 1;
+  }
+  lineWidth = width;
+}
+
+int getLineWidth() { return lineWidth; }
+
+#pragma endregion
+} // namespace graphics
+} // namespace love
+
+int luaopen_love_graphics(lua_State *L) {
+
+  printf("<== MODULE LOVE GFX ==>\n");
+  sol::state_view luastate(L);
+
+  luastate.new_usertype<love::graphics::love_canvas_t>(
+      "Canvas", sol::no_constructor, sol::meta_function::garbage_collect,
+      sol::destructor(love::graphics::free_canvas), "getWidth",
+      [](love::graphics::love_canvas_t *c) { return c->viewWidth; },
+      "getHeight",
+      [](love::graphics::love_canvas_t *c) { return c->viewHeight; });
+
+  luastate["love"]["graphics"] = luastate.create_table_with(
+      "newCanvas", love::graphics::create_canvas, 
+      "setCanvas", love::graphics::lua_setCanvas, 
+      "setColor",  love::graphics::setColor_float4, 
+      "getColor", love::graphics::getColor,
+      "rectangle", love::graphics::rectangle, "polygon",
+      sol::overload(love::graphics::polygon_variadic,
+                    love::graphics::polygon_verts),
+      "circle", love::graphics::circle, "line",
+      sol::overload(love::graphics::line_variadic, love::graphics::line_verts),
+      "draw",
+      sol::overload(love::graphics::draw_x_y_r_sx_sy_ox_oy,
+                    love::graphics::draw_canvas_x_y_r_sx_sy_ox_oy,
+                    love::graphics::draw_quad_x_y_r_sx_sy_ox_oy),
+      "setFont", love::graphics::setFont, "newFont",
+      sol::overload(love::graphics::newFont, love::graphics::newFont_size,
+                    love::graphics::newFont_file,
+                    love::graphics::newFont_file_size),
+      "setNewFont",
+      sol::overload(love::graphics::newFont, love::graphics::newFont_size,
+                    love::graphics::newFont_file,
+                    love::graphics::newFont_file_size),
+      "print", love::graphics::print_x_y_r_sx_sy_ox_oy, "newImage",
+      sol::overload(love::graphics::newImage, love::graphics::newImage_data,
+                    love::graphics::newImage_file_data,
+                    love::graphics::newImage_empty),
+      "newQuad", love::graphics::newQuad, "setBackgroundColor",
+      love::graphics::setBackgroundColor_float4, "getBackgroundColor",
+      love::graphics::getBackgroundColor, "clear",
+      sol::overload(love::graphics::clear_float4, love::graphics::clear_float3,
+                    love::graphics::clear),
+      "isActive", love::graphics::isActive, 
+      "origin", love::graphics::origin,
+      "present", love::graphics::present, 
+      "push", love::graphics::push, 
+      "pop", love::graphics::pop, 
+      "translate", love::graphics::translate, "rotate",
+      love::graphics::rotate, "scale", love::graphics::scale, "getWidth",
+      love::graphics::getWidth, "getHeight", love::graphics::getHeight,
+      "getDimensions", love::graphics::getDimensions,
+
+      "setLineWidth", love::graphics::setLineWidth, "getLineWidth",
+      love::graphics::getLineWidth);
+
+  return 1;
 }

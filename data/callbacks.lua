@@ -14,7 +14,7 @@ function love.createhandlers()
         end
     }, {
         __index = function(self, name)
-            error("Unknown event: " .. name)
+            error("Unknown event: " .. tostring(name))
         end
     })
 end
@@ -24,11 +24,13 @@ function Info(s)
 end
 
 function love.run()
+    print("love run")
     if love.load then love.load(love.arg.parseGameArguments(arg), arg) end
     if love.timer then love.timer.step() end
     local dt = 0
 
     while true do
+      print("loop")
         if love.event then
             love.event.pump()
             while true do
@@ -44,11 +46,12 @@ function love.run()
                 end
             end
             if love.timer then dt = love.timer.step() end
-            if love.wiimote then love.wiimote.update() end
 --            Info("wiimote")
+            print("love update")
             if love.update then love.update(dt) end
 --            Info("update")
 
+            print("love graphics")
             if love.graphics and love.graphics.isActive() then
                 love.graphics.origin()
                 --Info("Origin")
@@ -59,8 +62,11 @@ function love.run()
                 love.graphics.setColor(love.graphics.getBackgroundColor())
                 love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
                 love.graphics.setColor(unpack(lastColor))
+                print("=== (DRAW) ===")
                 if love.draw then love.draw() end
+                print("=== (PRESENT) ===")
                 love.graphics.present()
+                print("==(END)==")
             end
 
             love.timer.sleep(0.001)

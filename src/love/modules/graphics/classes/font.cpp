@@ -54,7 +54,6 @@ Font::Font(std::string file) {
 Font::Font(std::string file, int size) {
   uint8_t *data = nullptr;
   std::string f = "sd:/LOVEPower/" + filesystem::getFilePath(file);
-  printf("[FONT] file %s exists ? : %d\n", f.c_str(), std::filesystem::exists(f.c_str()));
   int dataSize = GRRLIB_LoadFile(f.c_str(), &data);
   if (dataSize <= 0) {
     switch(dataSize){

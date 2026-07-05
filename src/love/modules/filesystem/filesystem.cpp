@@ -47,10 +47,6 @@ std::string getFilePath(const std::string &file) {
       path = "save/" + file;
     }
   }
-
-
-  printf("final path : %s\n", path.c_str());
-  printf("file exists ? : %d\n", std::filesystem::exists(path));
   return path;
 }
 

@@ -82,19 +82,12 @@ love::graphics::Font newFont_file_size(std::string file, int size);
 
 void _print(const std::string &text, float x, float y, float rotation, float sx,
             float sy, float ox, float oy);
-void print(const std::string &text);
-void print_x(const std::string &text, float x);
-void print_x_y(const std::string &text, float x, float y);
-void print_x_y_r(const std::string &text, float x, float y, float rotation);
-void print_x_y_r_sx(const std::string &text, float x, float y, float rotation,
-                    float sx);
-void print_x_y_r_sx_sy(const std::string &text, float x, float y,
-                       float rotation, float sx, float sy);
-void print_x_y_r_sx_sy_ox(const std::string &text, float x, float y,
-                          float rotation, float sx, float sy, float ox);
-void print_x_y_r_sx_sy_ox_oy(const std::string &text, float x, float y,
-                             float rotation, float sx, float sy, float ox,
-                             float oy);
+
+void print_x_y_r_sx_sy_ox_oy(const std::string &text, 
+    sol::optional<float> x, sol::optional<float> y,
+    sol::optional<float> rotation, sol::optional<float> sx, 
+    sol::optional<float> sy, sol::optional<float> ox,
+    sol::optional<float> oy);
 
 #pragma region Helpers
 
