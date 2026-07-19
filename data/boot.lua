@@ -6,7 +6,12 @@ require("love.callbacks")
 local noGameCode = false
 local invalidGamePath = nil
 
+function Info(s)
+  print("[LUA] <boot> : "..s)
+end
+
 function love.boot()
+    Info("love.boot beginning")
     require("love.filesystem")
     local arg0 = love.arg.getLow(arg) or "sd://LOVEPower/LOVEPower.dol"
     if type(arg0) == "string" and arg0 ~= "" then
@@ -18,6 +23,7 @@ function love.boot()
             arg0 = "sd://LOVEPower"
         end
     end
+    Info("filesystem init")
     love.filesystem.init(arg0)
 
     local canHasGame = true
@@ -26,6 +32,7 @@ function love.boot()
     local isFusedGame = canHasGame
     --love.filesystem.setFused(isFusedGame)
 
+    print("Set deprecation output")
     love.setDeprecationOutput(true)
 
     if canHasGame and not (love.filesystem.exists("main.lua") or love.filesystem.exists("conf.lua")) then
@@ -40,6 +47,7 @@ function love.boot()
 end
 
 function love.init()
+    Info("love init")
     local c = {
         --title = "LOVEPower", -- Not used in LOVEPower
         version = "0.1", -- TODO: Implement version checking

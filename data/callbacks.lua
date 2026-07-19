@@ -1,10 +1,36 @@
 local love = require("love")
 
+local original_poll = love.event.poll
+
+love.event.poll = function()
+    return function()
+        local n, a, b, c, d, e, f = original_poll()
+        if n then
+            -- If the event name itself or an argument is a userdata
+            if type(n) == "userdata" or type(a) == "userdata" then
+                print("--- Rogue Userdata Detected ---")
+                print("Event Name type:", type(n), n)
+                print("Arg 1 type:", type(a), a)
+                
+                -- Try to extract a metatable name
+                local mt = getmetatable(n or a)
+                if mt then
+                    print("Metatable __name:", mt.__name)
+                end
+                
+                -- Print the traceback to see how love.run is calling it
+                print(debug.traceback()) 
+            end
+            return n, a, b, c, d, e, f
+        end
+    end
+end
+
 function love.createhandlers()
-    love.handlers = setmetatable({
+    print("[LUA] Create Handlers <default>")
+    love.handlers = {
         quit = function()
-			return
-		end,
+		    end,
         lowmemory = function()
             if love.lowmemory then love.lowmemory() end
             collectgarbage()
@@ -12,9 +38,9 @@ function love.createhandlers()
         end,
         mousemoved = function(x, y, dx, dy, touch)
         end
-    }, {
-        __index = function(self, name)
-            error("Unknown event: " .. tostring(name))
+    }
+    setmetatable(love.handlers, {__index = function(_self, name)
+            print("Unknown event: " .. tostring(name).."("..")")
         end
     })
 end
@@ -42,6 +68,7 @@ function love.run()
                         return a or 0
                     end
                 else
+
                     love.handlers[name](a, b, c, d, e, f)
                 end
             end

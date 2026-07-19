@@ -15,6 +15,8 @@ namespace love {
 
         extern std::queue<event_t> events;
         //extern std::queue<event_t>::iterator currentEvent;
+       
+        void print_event_name(event_t& e);
 
         void __init(sol::state &luastate);
 

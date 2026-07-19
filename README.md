@@ -22,6 +22,7 @@ Modified libraries will be available in source code for ease of user compiling
 - Fix freezing with some graphical functions (love.graphics)
 - Make an app launcher for multiple lua scripts. (no lua needed)
 - Test the API (using https://github.com/ellraiser/love-test)
+- Use https://blog.allpurposem.at/tag:wii
 
 Not in a specific order.
 

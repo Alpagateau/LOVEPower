@@ -70,6 +70,7 @@ namespace love {
                          sol::object a = sol::lua_nil, sol::object b = sol::lua_nil,
                          sol::object c = sol::lua_nil, sol::object d = sol::lua_nil,
                          sol::object e = sol::lua_nil, sol::object f = sol::lua_nil) {
+            printf("[EVENTS] Pushing event [%s]\n", eventName);
             push(sol::make_object(lua, eventName), a, b, c, d, e, f, lua);
         }
 
@@ -180,6 +181,9 @@ namespace love {
                 //                      sol::lua_nil, sol::lua_nil, sol::lua_nil, sol::lua_nil);
             } else {
                 event_t e = events.front();
+                printf("[EVENTS POLL] Polling");
+                print_event_name(e);
+                printf("\n");
                 events.pop();
 
                 vr.push_back(std::get<0>(e));
@@ -209,6 +213,12 @@ namespace love {
             SYS_ResetSystem(SYS_RETURNTOMENU, 0, 0);
             std::exit(0);
         }
+
+        void print_event_name(event_t& e)
+        {
+          sol::object c = std::get<0>(e);
+          printf("<%s>", c.as<std::string>().c_str());
+        }
     }
 }
 
@@ -216,6 +226,9 @@ int luaopen_love_event(lua_State *L) {
 
     printf("<== MODULE LOVE EVENT ==>\n");
     sol::state_view luastate(L);
+
+    while(!love::event::events.empty())
+      love::event::events.pop();
 
     luastate["love"]["event"] = luastate.create_table_with(
         "pump", love::event::pump,

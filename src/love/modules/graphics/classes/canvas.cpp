@@ -12,26 +12,30 @@ namespace graphics {
 
 static love_canvas_t* current_canvas; 
 
+
+void copyEfbToCurrentCanvas()
+{
+  GX_SetTexCopySrc(0, 0, current_canvas->viewWidth, current_canvas->viewHeight);
+  GX_SetTexCopyDst(current_canvas->buffer->w, current_canvas->buffer->h, current_canvas->buffer->format, GX_FALSE);
+  GX_CopyTex(current_canvas->buffer->data, 1);
+}
+
+
 love_canvas_t *create_canvas(u16 w, u16 h) {
  
   if(w == 0 && h == 0) {w = 640; h = 480;}
-
   if(w > 640 || h > 480) throw std::runtime_error("Wii hardware limitation error : cant create a canvas bigger than 640x480");
 
   love_canvas_t *c = (love_canvas_t *)malloc(sizeof(love_canvas_t));
 
   c->viewWidth = w;
   c->viewHeight = h;
-
   printf("Creating a canvas of %dx%d\n", w, h);
 
-  u32 width = (w + 15) & ~15;
-  u32 height = (h + 15) & ~15;
+  c->buffer = GRRLIB_CreateEmptyTextureFmt(w, h, GX_TF_RGBA8);
+  c->texSize = GX_GetTexBufferSize(c->buffer->w, c->buffer->h, GX_TF_RGBA8, GX_FALSE, 0);
 
-  c->buffer = GRRLIB_CreateEmptyTextureFmt(width, height, GX_TF_RGBA8);
-  u32 texSize = GX_GetTexBufferSize(c->buffer->w, c->buffer->h, GX_TF_RGBA8, GX_FALSE, 0);
-
-  DCInvalidateRange(c->buffer->data, texSize);
+  printf("Is the buffer 32b aligned ? : %d\n" , ((int)c->buffer->data & 4) == 0);
   return c;
 }
 
@@ -42,10 +46,9 @@ love_canvas_t* getCanvas()
 
 void set_canvas(love_canvas_t* canvas) {
 if (current_canvas != nullptr && current_canvas != canvas) {
-        resolve_canvas(current_canvas);
+        resolve_canvas();
     }
 
-    current_canvas = canvas;
     Mtx44 proj;
 
     if (canvas != nullptr) {
@@ -61,25 +64,16 @@ if (current_canvas != nullptr && current_canvas != canvas) {
         guOrtho(proj, 0, 480, 0, 640, 0, 300);
         GX_LoadProjectionMtx(proj, GX_ORTHOGRAPHIC);
     }
+    current_canvas = canvas;
 }
 
-void resolve_canvas(love_canvas_t *canvas) {
-  if (canvas == nullptr || canvas->buffer == nullptr || canvas->buffer->data == nullptr)
-        return;
-
-    GX_DrawDone(); 
-
-    GX_SetTexCopySrc(0, 0, canvas->buffer->w, canvas->buffer->h);
-    GX_SetTexCopyDst(canvas->buffer->w, canvas->buffer->h, canvas->buffer->format, GX_FALSE);
-    
-    GX_CopyTex(canvas->buffer->data, GX_FALSE);
-    
-    GX_PixModeSync();
-
-    DCInvalidateRange(canvas->buffer->data,
-                      GX_GetTexBufferSize(canvas->buffer->w, canvas->buffer->h,
-                                          canvas->buffer->format, GX_FALSE, 0));
-    GX_InvalidateTexAll();
+void resolve_canvas() {
+  if (current_canvas == nullptr || current_canvas->buffer == nullptr || current_canvas->buffer->data == nullptr)
+  {
+    throw std::runtime_error("Resolving null canvas. Something went wrong in the rendering pipeline");
+  }
+  GX_DrawDone(); 
+  copyEfbToCurrentCanvas();
 }
 
 void free_canvas(love_canvas_t *canvas) {
@@ -94,7 +88,7 @@ void lua_setCanvas(sol::object c) {
     set_canvas(c.as<love_canvas_t *>());
 }
 
-void lua_resolveCanvas(love_canvas_t *c) { resolve_canvas(c); }
+void lua_resolveCanvas(love_canvas_t *c) { resolve_canvas(); }
 
 void lua_nativeDraw(love_canvas_t *c, float x, float y,
                     sol::variadic_args args) {
@@ -104,7 +98,7 @@ void lua_nativeDraw(love_canvas_t *c, float x, float y,
   float degrees = 0.0f;
   float scaleX = 1.0f;
   float scaleY = 1.0f;
-  u32 tintColor = 0xFFFFFFFF; // Clean white default tint
+  u32 tintColor = 0xFFFFFFFF;
 
   if (args.size() > 0)
     degrees = args[0].as<float>();

@@ -12,11 +12,12 @@ typedef struct {
   GRRLIB_texImg* buffer;
   u16 viewWidth;
   u16 viewHeight;
+  u32 texSize;
 } love_canvas_t;
 
 love_canvas_t* create_canvas(u16 w, u16 h);
 void set_canvas(love_canvas_t* canvas);
-void resolve_canvas(love_canvas_t* canvas);
+void resolve_canvas();
 love_canvas_t* getCanvas();
 void free_canvas(love_canvas_t* canvas);
 

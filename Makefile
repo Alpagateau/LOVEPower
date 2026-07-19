@@ -213,7 +213,7 @@ DEPENDS	:=	$(OFILES:.o=.d)
 $(OUTPUT).dol: $(OUTPUT).elf
 $(OUTPUT).elf: $(OFILES)
 
-$(OFILES_SOURCES) : $(HFILES)
+$(OFILES_SOURCES) : | $(HFILES)
 
 #---------------------------------------------------------------------------------
 # This rule links in binary data with the .jpg extension
@@ -233,8 +233,6 @@ $(OFILES_SOURCES) : $(HFILES)
 	$(bin2o)
 	@echo "$@ : $*.h" > $*.d
 
--include $(DEPENDS)
-
 #---------------------------------------------------------------------------------
 # This rule links in binary data with the .lua extension
 #---------------------------------------------------------------------------------
@@ -247,8 +245,6 @@ $(OFILES_SOURCES) : $(HFILES)
 %.lua.h: %.lua
 	@echo "LUA     $<"
 	@xxd -i $< > $@
-
--include $(DEPENDS)
 
 #---------------------------------------------------------------------------------
 # This rule links in binary data with the .ttf extension
