@@ -1,30 +1,29 @@
 local love = require("love")
 
-local original_poll = love.event.poll
+--local original_poll = love.event.poll
 
-love.event.poll = function()
-    return function()
-        local n, a, b, c, d, e, f = original_poll()
-        if n then
-            -- If the event name itself or an argument is a userdata
-            if type(n) == "userdata" or type(a) == "userdata" then
-                print("--- Rogue Userdata Detected ---")
-                print("Event Name type:", type(n), n)
-                print("Arg 1 type:", type(a), a)
-                
-                -- Try to extract a metatable name
-                local mt = getmetatable(n or a)
-                if mt then
-                    print("Metatable __name:", mt.__name)
-                end
-                
-                -- Print the traceback to see how love.run is calling it
-                print(debug.traceback()) 
-            end
-            return n, a, b, c, d, e, f
-        end
-    end
-end
+--love.event.poll = function()
+--    return function()
+--        local n, a, b, c, d, e, f = original_poll()
+--        if n then
+--            -- If the event name itself or an argument is a userdata
+--            if type(n) == "userdata" or type(a) == "userdata" then
+--                print("--- Rogue Userdata Detected ---")
+--                print("Event Name type:", type(n), n)
+--                print("Arg 1 type:", type(a), a)
+--
+--                -- Try to extract a metatable name
+--                local mt = getmetatable(n or a)
+--                if mt then
+--                    print("Metatable __name:", mt.__name)
+--                end
+--                -- Print the traceback to see how love.run is calling it
+--                print(debug.traceback())
+--            end
+--            return n, a, b, c, d, e, f
+--        end
+--    end
+--end
 
 function love.createhandlers()
     print("[LUA] Create Handlers <default>")
@@ -56,11 +55,11 @@ function love.run()
     local dt = 0
 
     while true do
-      print("loop")
+      print(">loop<")
         if love.event then
             love.event.pump()
             while true do
-                local success, name, a, b, c, d, e, f = pcall(love.event.poll)
+                local success, name, a, b, c, d, e, f = pcall(love.event.poll())
                 if not success then Info("<ERROR> "..name) end
                 if not name then break end
                 if name == "quit" then
@@ -68,8 +67,11 @@ function love.run()
                         return a or 0
                     end
                 else
-
-                    love.handlers[name](a, b, c, d, e, f)
+                    if love.handlers[name] ~= nil then
+                      love.handlers[name](a, b, c, d, e, f)
+                    else
+                      print("[EVENTS] Error : handler not known ("..name..")")
+                    end
                 end
             end
             if love.timer then dt = love.timer.step() end

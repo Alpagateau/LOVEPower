@@ -1,6 +1,9 @@
 #ifndef LOVE_DEBUG_HPP
 #define LOVE_DEBUG_HPP
 
+extern "C"{
+  #include "lua.h"
+}
 #include <stdio.h>
 
 #define DEBUG_LOG(s, ...) \
@@ -8,5 +11,7 @@
 
 void DebugInit();
 FILE* DebugGetFile();
+
+int getCurrentLine(lua_State* L);
 
 #endif

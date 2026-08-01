@@ -10,21 +10,30 @@
 namespace love {
 namespace graphics {
 
-static love_canvas_t* current_canvas; 
+static love_canvas_t *main_screen = nullptr;
+static love_canvas_t *current_canvas;
 
-
-void copyEfbToCurrentCanvas()
-{
+void copyEfbToCurrentCanvas() {
   GX_SetTexCopySrc(0, 0, current_canvas->viewWidth, current_canvas->viewHeight);
-  GX_SetTexCopyDst(current_canvas->buffer->w, current_canvas->buffer->h, current_canvas->buffer->format, GX_FALSE);
-  GX_CopyTex(current_canvas->buffer->data, 1);
+  GX_SetTexCopyDst(current_canvas->buffer->w, current_canvas->buffer->h,
+                   current_canvas->buffer->format, GX_FALSE);
+
+  GX_CopyTex(current_canvas->buffer->data, GX_TRUE);
+  GX_DrawDone();
+
+  DCInvalidateRange(current_canvas->buffer->data, current_canvas->texSize);
+  GX_InvalidateTexAll();
 }
 
-
 love_canvas_t *create_canvas(u16 w, u16 h) {
- 
-  if(w == 0 && h == 0) {w = 640; h = 480;}
-  if(w > 640 || h > 480) throw std::runtime_error("Wii hardware limitation error : cant create a canvas bigger than 640x480");
+
+  if (w == 0 || h == 0) {
+    w = 640;
+    h = 480;
+  }
+  if (w > 640 || h > 480)
+    throw std::runtime_error("Wii hardware limitation error : cant create a "
+                             "canvas bigger than 640x480");
 
   love_canvas_t *c = (love_canvas_t *)malloc(sizeof(love_canvas_t));
 
@@ -33,46 +42,61 @@ love_canvas_t *create_canvas(u16 w, u16 h) {
   printf("Creating a canvas of %dx%d\n", w, h);
 
   c->buffer = GRRLIB_CreateEmptyTextureFmt(w, h, GX_TF_RGBA8);
-  c->texSize = GX_GetTexBufferSize(c->buffer->w, c->buffer->h, GX_TF_RGBA8, GX_FALSE, 0);
+  c->texSize =
+      GX_GetTexBufferSize(c->buffer->w, c->buffer->h, GX_TF_RGBA8, GX_FALSE, 0);
 
-  printf("Is the buffer 32b aligned ? : %d\n" , ((int)c->buffer->data & 4) == 0);
+  printf("Is the buffer 32b aligned ? : %d\n", ((int)c->buffer->data & 4) == 0);
   return c;
 }
 
-love_canvas_t* getCanvas()
-{
-  return current_canvas;
-}
+love_canvas_t *getCanvas() { return current_canvas; }
 
-void set_canvas(love_canvas_t* canvas) {
-if (current_canvas != nullptr && current_canvas != canvas) {
-        resolve_canvas();
-    }
+void set_canvas(love_canvas_t *canvas) {
 
-    Mtx44 proj;
+  if(main_screen == nullptr)
+  {
+    main_screen = create_canvas(0, 0);
+  }
 
-    if (canvas != nullptr) {
-        GX_SetViewport(0, 0, canvas->viewWidth, canvas->viewHeight, 0, 1);
-        GX_SetScissor(0, 0, canvas->viewWidth, canvas->viewHeight);
+  if(current_canvas == nullptr && canvas != nullptr)
+  {
+    current_canvas = main_screen;
+    resolve_canvas();
+    current_canvas = nullptr;
+  }
 
-        guOrtho(proj, 0, canvas->viewHeight, 0, canvas->viewWidth, 0, 300);
-        GX_LoadProjectionMtx(proj, GX_ORTHOGRAPHIC);
-    } else {
-        GX_SetViewport(0, 0, 640, 480, 0, 1);
-        GX_SetScissor(0, 0, 640, 480);
+  if (current_canvas != nullptr && current_canvas != canvas) {
+    resolve_canvas();
+  }
 
-        guOrtho(proj, 0, 480, 0, 640, 0, 300);
-        GX_LoadProjectionMtx(proj, GX_ORTHOGRAPHIC);
-    }
-    current_canvas = canvas;
+  Mtx44 proj;
+
+  if (canvas != nullptr) {
+    GX_SetViewport(0, 0, canvas->viewWidth, canvas->viewHeight, 0, 1);
+    GX_SetScissor(0, 0, canvas->viewWidth, canvas->viewHeight);
+
+    guOrtho(proj, 0, canvas->viewHeight, 0, canvas->viewWidth, 0, 300);
+    GX_LoadProjectionMtx(proj, GX_ORTHOGRAPHIC);
+ 
+  } else {
+    GX_SetViewport(0, 0, 640, 480, 0, 1);
+    GX_SetScissor(0, 0, 640, 480);
+
+    guOrtho(proj, 0, 480, 0, 640, 0, 300);
+    GX_LoadProjectionMtx(proj, GX_ORTHOGRAPHIC);
+    GRRLIB_DrawImg(0, 0, main_screen->buffer, 0, 1, 1, 0xFFFFFFFF);
+  }
+
+  current_canvas = canvas;
 }
 
 void resolve_canvas() {
-  if (current_canvas == nullptr || current_canvas->buffer == nullptr || current_canvas->buffer->data == nullptr)
-  {
-    throw std::runtime_error("Resolving null canvas. Something went wrong in the rendering pipeline");
+  if (current_canvas == nullptr || current_canvas->buffer == nullptr ||
+      current_canvas->buffer->data == nullptr) {
+    throw std::runtime_error("Resolving null canvas. Something went wrong in "
+                             "the rendering pipeline");
   }
-  GX_DrawDone(); 
+  GX_DrawDone();
   copyEfbToCurrentCanvas();
 }
 
